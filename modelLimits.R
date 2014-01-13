@@ -1,7 +1,7 @@
-setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/analyzeSlopesOfPreviousPapers")
-load("threshes_speedSave",verbose=TRUE) #from HolcombeChen2013
-load("threshes_tfSave",verbose=TRUE) #from HolcombeChen2013
-setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/modelComboOfSpeedAndTFlimit")
+#setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/analyzeSlopesOfPreviousPapers")
+load("data/threshes_speedSave",verbose=TRUE) #from HolcombeChen2013
+load("data/threshes_tfSave",verbose=TRUE) #from HolcombeChen2013
+#setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/modelComboOfSpeedAndTFlimit")
 source('psychometricHelpRobust6.R') 
 lapseRate = .01
 
@@ -37,8 +37,8 @@ rpsParms$chanceRate = 1/rpsParms$numObjects
 
 cat('Have replicated rpsParms for all',nrow(rpsParms),'conditions')
 
-numSpeeds=100
-speeds<-seq(1,3,length.out=numSpeeds)
+numSpeeds=50
+speeds<-seq(0.1,4,length.out=numSpeeds)
 #replicate every row of rpsParms for each speed
 psychometricsSpeed<- data.frame(rpsParms[,],speed=rep(speeds,each=nrow(rpsParms)))
 #psychometricsSpeed<- data.frame(rpsParms[,],speed=rep(1:numSpeeds,each=nrow(rpsParms)))
@@ -88,14 +88,15 @@ psychometrics= rbind(psychometricsSpeed,psychometricsHz)
 tit<-'Both_rps_and_Hz_limits'
 quartz(tit,width=5,height=7)
 g=ggplot(data=psychometrics,
-         aes_string(x="speed",y="correct",linetype="factor(numObjects)",color="limit"))
+         aes_string(x="speed",y="correct",color="limit")) #linetype="factor(numObjects)",
 g=g+facet_grid(numTargets~.)
 g=g+geom_line()+theme_bw()
+g=g+facet_grid(numTargets~numObjects)
 g=g+ylab('Proportion Correct')
 g=g+xlab('Speed (rps)') 
 g=g+ggtitle('overlap much greater for 3-object case')
 show(g)
-ggsave( paste('figures/',tit,'.png',sep='') )
+ggsave( paste('figs/',tit,'.png',sep='') )
 
 #################################################################################
 #Multiply it with each other, then extract resulting threshes
@@ -170,12 +171,10 @@ psAfterBoth$limit= "combined"
 psychometricsLims= rbind(psychometrics,psAfterBoth)
 #psychometricsLims= subset(psAfterBoth,numObjects==3)
 
-tit<-'Both_rps_and_Hz_limits'
+tit<-'rps_and_Hz_limits_combined'
 quartz(tit,width=5,height=3.5)
 g=ggplot(data=psychometricsLims, alpha=.5,
-         aes_string(x="speed",y="correct",linetype="factor(numObjects)",color="limit"))
-g=ggplot(data=psychometricsLims, alpha=.5,
-         aes_string(x="speed",y="correct",color="limit"))
+         aes_string(x="speed",y="correct",color="limit")) #linetype="factor(numObjects)"
 g=g+geom_line(aes(size=as.factor(limit)))+theme_bw()
 g=g+scale_size_manual(values=c(3,1,1)) #combined thickest
 g=g+facet_grid(numTargets~numObjects)
@@ -195,6 +194,7 @@ show(g)
 #putting that in right when
 
 #Extract threshes from model curves. This is practice
+threshes <- data.frame()
 threshCriteria<-c(0.8)
 for (threshCriterion in threshCriteria) {
   
@@ -211,37 +211,25 @@ for (threshCriterion in threshCriteria) {
   threshesThis<-threshesThisNumeric
   threshes<- rbind(threshes, threshesThis)
 }
-
-factorsPlusLimitType<-c(factors,"limit")
-factorsPlusLimitType= factorsPlusLimitType[ factorsPlusLimitType!="speed" ] #delete speed
-
-getThreshesFromCurve<- function(psychometrics,factors,iv,criterion) {
-  psychometricTemp<-psychometrics
-  #use point by point search to find the threshold. 
-  myThreshGetNumeric= makeMyThreshGetNumerically("speed",criterion)
-  threshesThisNumeric = ddply(psychometricTemp,factorsPlusLimitType,myThreshGetNumeric) 
-  threshesThisNumeric$criterion <- criterion
-  return (threshesThisNumeric)
+failedConds=threshes[is.na(threshes$thresh),1:2]
+if (nrow(failedConds)>0) {
+  cat('Failed to find thresh from psychometric for conditions:')
+  print(failedConds)
 }
-#Extract thresholds 
-threshes <- data.frame()
-criterion=0.8
-threshesThis<- getThreshesFromCurve(psychometricsLims,factorsPlusLimitType,"speed",criterion)
-threshes<- rbind(threshes, threshesThis)
 
-toMakeLine= subset(threshesThis,!is.na(thresh)) #omit where couldn't extract thresh
+toMakeLine= subset(threshes,!is.na(thresh)) #omit where couldn't extract thresh
 threshLines= ddply(toMakeLine,factorsPlusLimitType,threshLine)
 #threshLines=subset(threshLines,!is.na(speed)) #tf 2 objects 2 rings cut off
-mn=min(threshLines$correct) #replace minimum value with higher
-threshLines$correct[(threshLines$correct==mn)] = 0.3 #because don't want to show axis all way to 0
+minY=min(threshLines$correct) #replace minimum value with higher
+threshLines$correct[(threshLines$correct==minY)] = 0.3 #because don't want to show axis all way to 0
+threshLines$speed[(threshLines$speed==0)] = min(psychometricsLims$speed) #because don't want to show axis all way to 0
 #I have no idea why have to add these separately to prevent lines not getting messed up
-#g+geom_line(data=threshLines,lty=3)
-g<-g+geom_line(data=threshLines[c(1:6,10:15),],lty=3)
-g<-g+geom_line(data=threshLines[c(7:9),],lty=3)
-#Why is thresh 1.444 - that seems too slow!
+g<-g+geom_line(data=threshLines,lty=3)
+#g<-g+geom_line(data=threshLines[c(1:6,10:15),],lty=3)
+#g<-g+geom_line(data=threshLines[c(7:9),],lty=3)
 g=g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
 show(g)
-ggsave( paste('figures/',tit,'.png',sep='') )
+ggsave( paste('figs/',tit,'.png',sep='') )
 
 #why is above not working for some threshes, e.g. 
 # threshesHeck=subset(threshesThis,numObjects==2 & numTargets==1 & numRings==2 & limit=="combined")
@@ -249,8 +237,26 @@ ggsave( paste('figures/',tit,'.png',sep='') )
 # threshLines[with(threshLines,order(numObjects,numTargets,numRings,limit,speed)),]
 
 #THEN PRETTIFY FOR CONCEPTUAL FIGURE FOR PAPER
+threshes$limit = factor(threshes$limit,unique(threshes$limit)[c(2,3,1)]) #speed,tf,combined
 
 #I need a plot of the thresholds too, not the psychometric functions
+tit<-'threshes plot'
+quartz(tit,width=5,height=3.5)
+g=ggplot(threshes,aes(x=limit,y=thresh))
+g=g+theme_bw()+ facet_grid(numTargets~numObjects)
+g=g+geom_point()
+show(g)
+
+quartz(tit,width=3.2,height=3.5)
+g=ggplot(threshes,
+         aes(x=factor(numObjects),y=thresh,color=limit,alpha=limit))
+g=g+theme_bw()+ facet_grid(numTargets~.)
+g=g+geom_point(size=2.5,position=position_dodge(width=.2))
+g=g+scale_alpha_manual(values=c(.6,.6,1)) #combined thickest
+g=g+scale_color_manual(values=c("blue","red","black")) #make combined black
+g=g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
+#g=g+geom_line() #doesn't work
+show(g)
 
 #For doing stats, need to do it for each subject's psychometric function in each condition,
 #unless that's overkill because have some unstable Ss. But ideally would show that Ss with
