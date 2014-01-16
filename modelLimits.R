@@ -1,11 +1,12 @@
-#setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/analyzeSlopesOfPreviousPapers")
-load("data/threshes_speedHolcombeChen2013",verbose=TRUE) #from 
-load("data/threshes_tfHolcombeChen2013",verbose=TRUE) #from 
-#setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/modelComboOfSpeedAndTFlimit")
+#working directory set by starting Rstudio via .Rproj file
+#setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/speed-tf-VSS14")
+load("data/threshes_speedHolcombeChen2013",verbose=TRUE)
+load("data/threshes_tfHolcombeChen2013",verbose=TRUE) 
 source('helpers/psychometricHelpRobust6.R') 
 lapseRate = .01
 
-#Get the speed limit psychometric function. Based on 2 distractors mean across Ss
+#Get the speed limit psychometric function. Based on 2 distractors mean across Ss.
+#Use HolcombeChen2013
 iv="speed"
 twoDistractors<-subset(threshes_speedSave,numTargets==1 & numObjects==3)
 twoDistractors<-subset(twoDistractors,criterion==0.8) #simply because criteria redundant with regrds to psychometric function parameters
@@ -17,6 +18,10 @@ colsToDelete=c("nErrs","temp","nWarns","firstWarn","subject","error","targets") 
 rpsParms<-rpsParms[ , !names(rpsParms) %in% colsToDelete] 
 rpsParms$lapseRate<-lapseRate
 rpsParms$slopeLabel="mean"
+
+#######Try it for E1 of HolcombeChen2014VSS.  E1 already been delivered by doAllAnalyses.R
+#subset(E1threshes,numTargets==1 & numObjects )
+###################################################################################################
 
 #Now simulate that for all conditions I'm interested in.
 #Duplicate the speed limit parameters for every condition of interest.

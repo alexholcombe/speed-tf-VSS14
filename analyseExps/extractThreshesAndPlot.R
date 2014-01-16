@@ -59,7 +59,7 @@ h<-h+theme_bw()
 h<-h+ stat_summary(fun.y=mean,geom="point")
 #h<-h+ stat_summary(fun.y=mean,geom="line",size=1)  #I don't understand why line doesn't work
 h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.2,conf.int=.95) #error bar
-h<-h+ theme_bw()+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
+h<-h+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
 h<-h+ylab('thresh (rps)')
 h<-h+ggtitle("6,9 difft validates t.f. limit. Speed limits vary widely")
 #h<-h+coord_cartesian(ylim=c(1.5,2.5)) #have to use coord_cartesian here instead of naked ylim() to don't lose part of threshline
@@ -110,7 +110,7 @@ ggsave( paste('figs/',tit,'.png',sep='') )
 ###########################################################
 #Disprove Franconeri by making the theory he's talking about. But that also seems to require reasonable slopes
 
-
+cat('I give you threshes')
 ###################################
 #plot thresholds (at only one criterion level) for all 3 experiments at same time
 # quartz()
