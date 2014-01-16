@@ -1,8 +1,8 @@
 #setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/analyzeSlopesOfPreviousPapers")
-load("data/threshes_speedSave",verbose=TRUE) #from HolcombeChen2013
-load("data/threshes_tfSave",verbose=TRUE) #from HolcombeChen2013
+load("data/threshes_speedHolcombeChen2013",verbose=TRUE) #from 
+load("data/threshes_tfHolcombeChen2013",verbose=TRUE) #from 
 #setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/modelComboOfSpeedAndTFlimit")
-source('psychometricHelpRobust6.R') 
+source('helpers/psychometricHelpRobust6.R') 
 lapseRate = .01
 
 #Get the speed limit psychometric function. Based on 2 distractors mean across Ss
@@ -261,5 +261,8 @@ show(g)
 #For doing stats, need to do it for each subject's psychometric function in each condition,
 #unless that's overkill because have some unstable Ss. But ideally would show that Ss with
 #particularly low t.f. limit also have low speed - 3 distractors limit
+
 #For 2 targets and 3 targets, which limits, speed or temporal frequency?
-#2 targets looks like temporal frequency still holds for 
+
+#What have I got in terms of data? I've only gotten data from HolcombeChen2013. Time to
+#analyze and save new data as well esp. because tf limits lower.
