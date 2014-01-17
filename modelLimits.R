@@ -17,7 +17,7 @@ twoDistractors<-subset(twoDistractors,criterion==0.8) #simply because criteria r
 meanIfNumber<-function(x) {if (is.numeric(x)) return (mean(x))  else return (unique(x)[1]) }
 twoDistractors<-aggregate(twoDistractors, by=list(temp=twoDistractors$numObjects), meanIfNumber)
 rpsParms<- twoDistractors
-colsToDelete=c("nErrs","temp","nWarns","firstWarn","subject","error","targets","method") #will use targets instead of numTargets
+colsToDelete=c("nErrs","temp","nWarns","firstWarn","subject","error","targets") #will use targets instead of numTargets
 rpsParms<-rpsParms[ , !names(rpsParms) %in% colsToDelete] 
 rpsParms$lapseRate<-lapseRate
 rpsParms$slopeLabel="mean"
@@ -41,82 +41,43 @@ oneDistractorMean<-aggregate(oneDistractor, by=list(temp=oneDistractor$numObject
 eightDistractorsMean<-aggregate(eightDistractors, by=list(temp=eightDistractors$numObjects), meanIfNumber) #average whole thing
 
 rpsParms<- oneDistractorMean
-colsToDelete=c("nErrs","temp","nWarns","firstWarn","subject","error","targets") #will use targets instead of numTargets
 rpsParms<-rpsParms[ , !names(rpsParms) %in% colsToDelete] 
 rpsParms$lapseRate<-lapseRate
 rpsParms$slopeLabel="mean"
 
-colsToDelete=c("nErrs","temp","nWarns","firstWarn","subject","error","targets") 
+#Thresh is NOT expressed in Hz! Have to go back and re-analyze and deliver psychometric functions fitted to Hz
 tfLimitParms=eightDistractorsMean
 tfLimitParms<-tfLimitParms[ , !names(tfLimitParms) %in% colsToDelete] 
 tfLimitParms$lapseRate<-lapseRate
 tfLimitParms$slopeLabel="mean"
 #subset(E1threshes,numTargets==1 & numObjects )
 ###################################################################################################
-numSpeeds=5 #50
+numSpeeds=50 #50
 speeds<-seq(0.1,4,length.out=numSpeeds)
 conditns= expand.grid(targets=c(1,2,3),numObjects=c(2,3),speed=speeds)
 
-rpsParms= rpsParms[ rep(row.names(rpsParms),times=length(conditns)),  ] #replicate
-row.names(rpsParms)=NULL
-rpsParms = cbind(rpsParms,conditns)
+psychometricsSpeed= rpsParms[ rep(row.names(rpsParms),times=nrow(conditns)),  ] #replicate
+row.names(psychometricsSpeed)= NULL
+psychometricsSpeed$numObjects=NULL #will be replaced by conditns
+psychometricsSpeed = cbind(psychometricsSpeed,conditns)
+psychometricsSpeed$chanceRate = 1/psychometricsSpeed$numObjects
+  
+psychometricsHz= tfLimitParms[ rep(row.names(tfLimitParms),times=nrow(conditns)),  ] #replicate
+row.names(psychometricsHz)=NULL
+psychometricsHz$numObjects=NULL #will be replaced by conditns
+psychometricsHz= cbind(psychometricsHz,conditns)
+psychometricsHz$chanceRate = 1/psychometricsHz$numObjects
 
-HzParms= tfLimitParms[ rep(row.names(tfLimitParms),times=length(conditns)),  ] #replicate
-row.names(HzParms)=NULL
-HzParms= cbind(HzParms,conditns)
 ###################################################################################################
-#Now simulate that for all conditions I'm interested in.
-#Duplicate the speed limit parameters for every condition of interest.
-numTargConds=c(1,2,3)  
-#one rpsParms for each level of numTargets. ASSUMING SPEED LIMIT UNAFFECTED BY NUM TARGETS
-rpsParms<- rpsParms[ rep(row.names(rpsParms),times=length(numTargConds)),  ] #replicate
-rownames(rpsParms)<-NULL
-rpsParms$numTargets= rep(numTargConds,each=nrow(twoDistractors))
-rpsParms$chanceRate = 1/rpsParms$numObjects
-
-lengthSoFar=nrow(rpsParms)
-nObjConditns=c(2,3)  #c(2,3,6)
-#Replicate rpsParms for each nObj
-rpsParms<- rpsParms[ rep(row.names(rpsParms),times=length(nObjConditns)),  ] #replicate
-rownames(rpsParms)<-NULL
-rpsParms$numObjects= rep(nObjConditns,each=lengthSoFar)
-rpsParms$chanceRate = 1/rpsParms$numObjects
-
-cat('Have replicated rpsParms for all',nrow(rpsParms),'conditions')
-
-numSpeeds=50
-speeds<-seq(0.1,4,length.out=numSpeeds)
-#replicate every row of rpsParms for each speed
-psychometricsSpeed<- data.frame(rpsParms[,],speed=rep(speeds,each=nrow(rpsParms)))
-#psychometricsSpeed<- data.frame(rpsParms[,],speed=rep(1:numSpeeds,each=nrow(rpsParms)))
-
 psychoCorr<- makeMyPsychoCorr2("speed")
-#psychoCorr(psychometricsSpeed[1,]) #test it
-psychometricsSpeed$myKey= 1:nrow(psychometricsSpeed)
 #calculate predicted %correct
+psychometricsSpeed$myKey= 1:nrow(psychometricsSpeed)
 psychometricsSpeed$correct= daply(psychometricsSpeed,.(myKey),psychoCorr)
 psychometricsSpeed$myKey=NULL
 
-#HzParms #########################
-HzParms<-tfLimitParms
-#Replicate HzParms for each nObj
-HzParms<- HzParms[ rep(row.names(HzParms),times=length(numTargConds)),  ] #replicate
-rownames(HzParms)<-NULL
-HzParms$numTargets= rep(numTargConds,each=nrow(tfLimitParms))
-
-lengthSoFar=nrow(HzParms)
-HzParms<- HzParms[ rep(row.names(HzParms),times=length(numTargConds)),  ] #replicate
-rownames(HzParms)<-NULL
-HzParms$numTargets= rep(numTargConds,each=nrow(lengthSoFar))
-HzParms$chanceRate = 1/HzParms$numObjects
-
-#Replicate HzParms for each speed, then set speed
-psychometricsHz<- data.frame(HzParms[,],speed=rep(speeds,each=nrow(HzParms)))
-#I need to multiply by numObjects
-
+psychoCorr<- makeMyPsychoCorr2("tf") #will use tf as independent variable
 #Calculate predicted %correct, using psychometric function parameters
 psychometricsHz$myKey= 1:nrow(psychometricsHz)
-psychoCorr<- makeMyPsychoCorr2("tf") #will use tf as independent variable
 psychometricsHz$tf= psychometricsHz$speed * psychometricsHz$numObjects 
 psychometricsHz$correct= daply(psychometricsHz,.(myKey),psychoCorr)
 psychometricsHz$myKey=NULL
@@ -131,9 +92,8 @@ tit<-'Both_rps_and_Hz_limits'
 quartz(tit,width=4,height=4)
 g=ggplot(data=psychometrics,
          aes_string(x="speed",y="correct",color="limit")) #linetype="factor(numObjects)",
-g=g+facet_grid(numTargets~.)
 g=g+geom_line()+theme_bw()
-g=g+facet_grid(numTargets~numObjects)
+g=g+facet_grid(targets~numObjects)
 g=g+ylab('Proportion Correct')
 g=g+xlab('Speed (rps)') 
 g=g+ggtitle('overlap much greater for 3-object case')

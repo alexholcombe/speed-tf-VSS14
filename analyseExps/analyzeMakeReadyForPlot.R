@@ -1,4 +1,6 @@
 source('helpers/psychometricGgplotHelpRobust3.R') #load my custom version of binomfit_lims
+#source('helpers/psychometricHelpRobust6.R') #load my custom version of binomfit_lims
+
 expNum<-1
 varyLapseRate = TRUE
 #global variables needed by psychometricGgplotHelpRobust.R
