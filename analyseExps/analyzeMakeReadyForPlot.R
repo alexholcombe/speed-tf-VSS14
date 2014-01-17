@@ -1,5 +1,8 @@
-source('helpers/psychometricGgplotHelpRobust3.R') #load my custom version of binomfit_lims
-#source('helpers/psychometricHelpRobust6.R') #load my custom version of binomfit_lims
+#source('helpers/psychometricGgplotHelpRobust3.R') #load my custom version of binomfit_lims
+source('helpers/psychometricHelpRobust6.R') #load my custom version of binomfit_lims
+#Variables expected:
+#iv - "tf" or "speed"
+#dat - raw data (anonymized)
 
 expNum<-1
 varyLapseRate = TRUE
@@ -8,7 +11,7 @@ if (varyLapseRate) { lapseMinMax= c(0,0.05) }  else  #range of lapseRates to try
 	{ lapseMinMax = c(0.01,0.01) }
 chanceRate=.5
 factorsForBreakdown = c('exp','numObjects','numTargets')
-xLims=c(.04,2.7)  #c(.3,2.5)
+xLims=c(.04,2.7);  if (iv=="tf") {xLims=c(.5,8)}
 yLims=c(.3,1.05)
 numPointsForPsychometricCurve=200 
 #end global variables expected
@@ -28,7 +31,7 @@ factorsPlusSubject[ length(factorsForBreakdown)+1 ]<- "subject"
 
 #fit psychometric functions to data ########################################
 initialMethod<-"brglm.fit"  # "glmCustomlink" #  
-getFitParms <- makeParamFit(lapseMinMax,initialMethod,verbosity=0) #use resulting function for one-shot curvefitting
+getFitParms <- makeParamFit(iv,lapseMinMax,initialMethod,verbosity) #use resulting function for one-shot curvefitting
 getFitParmsPrintProgress <- function(df) {  #So I can see which fits yielded a warning, print out what was fitting first.
   cat("Finding best fit (calling fitParms) for")
   for (i in 1:length(factorsPlusSubject) ) #Using a loop print them all on one line
@@ -52,7 +55,9 @@ capacityOneParms$numTargets <- "2P"
 fitParms<-rbind(fitParms,capacityOneParms)
 fitParms$chanceRate <- 1/fitParms$numObjects
 #use the fitted parameters to get the actual curves
-myPlotCurve <- makeMyPlotCurve4(xLims[1],xLims[2]+.5,numPointsForPsychometricCurve)
+myPlotCurve <- makeMyPlotCurve4(iv,xLims[1],xLims[2]+.5,numPointsForPsychometricCurve)
+#ddply(fitParms,factorsPlusSubject,function(df) { if (nrow(df)>1) {print(df); STOP} })  #debugOFF
+
 psychometrics<-ddply(fitParms,factorsPlusSubject,myPlotCurve)  
 
 #Usually ggplot with stat_summary will collapse the data into means, but for some plots and analyses can't do it that way.
@@ -67,31 +72,31 @@ calcMeans<-function(df) {
   return(df)
 }  
 
-factorsPlusSubjectSpeed <- factorsPlusSubject
-factorsPlusSubjectSpeed[ length(factorsPlusSubjectSpeed)+1 ] <- "speed"
-datMeans<- ddply(dat,factorsPlusSubjectSpeed,calcMeans)
+factorsPlusSubjectAndIv <- factorsPlusSubject
+factorsPlusSubjectAndIv[ length(factorsPlusSubjectAndIv)+1 ] <- iv
+datMeans<- ddply(dat,factorsPlusSubjectAndIv,calcMeans)
 
-calcPctCorrThisSpeed <- function(df,s) {
+calcPctCorrThisIvVal <- function(df,iv,val) {
   #Expects a data.frame for a particular condition (only one row tests this speed, or none and must interpolate)
-  thisSpeedIdx<- which(df$speed==s)
-  if (length(thisSpeedIdx) > 1) {
+  thisValIdx<- which(df[,iv]==val)
+  if (length(thisValIdx) > 1) {
     stop('calcPctCorrThisSpeed passed a dataframe with more than one instance of speed s')
   }
-  if (length(thisSpeedIdx) ==1) {
-    answer<- df$pCorr[thisSpeedIdx] #equivalent to df[thisSpeedIdx,'pCorr']
+  if (length(thisValIdx) ==1) {
+    answer<- df$pCorr[thisValIdx] #equivalent to df[thisSpeedIdx,'pCorr']
   } else {  #This speed wasn't tested, so have to interpolate to estimate pCorr
-    smallers <- which(df$speed<s)
+    smallers <- which(df[,iv]<val)
     if (length(smallers)==0)
-      stop(paste('Speed queried,',s,'which is smaller than smallest speed tested,',min(df$speed)))
-    closestSmaller<- max( df$speed[smallers] )
-    largers <- which(df$speed>s)
+      stop(paste('IV val queried,',val,' is smaller than smallest val tested,',min(df[,iv])))
+    closestSmaller<- max( df[smallers,iv] )
+    largers <- which(df[,iv]>val)
     if (length(largers)==0)
-      stop(paste('Speed queried,',s,'which is larger than fastest speed tested,',max(df$speed)))
-    closestLarger<- min( df$speed[largers] )
+      stop(paste('IV val queried,',val,' is larger than largest val tested,',max(df[,iv])))
+    closestLarger<- min( df[largers,iv] )
     #calculate what fraction of the way s is to the larger
-    fractionWayToLarger<- (s-closestSmaller)/(closestLarger-closestSmaller)
-    largerPctCorr<- df$pCorr[ which(df$speed==closestLarger) ]
-    smallerPctCorr<- df$pCorr[ which(df$speed==closestSmaller) ]
+    fractionWayToLarger<- (val-closestSmaller)/(closestLarger-closestSmaller)
+    largerPctCorr<- df$pCorr[ which(df[,iv]==closestLarger) ]
+    smallerPctCorr<- df$pCorr[ which(df[,iv]==closestSmaller) ]
     answer<- smallerPctCorr + fractionWayToLarger*(largerPctCorr-smallerPctCorr)
     #print(paste('closestSmalledfr=',closestSmaller,'closestLarger=',closestLarger))
     #print(paste('fractionWayToLarger=',fractionWayToLarger,'largerPctCorr=',largerPctCorr,'smallerPctCorr=',smallerPctCorr,'answer=',answer))
@@ -99,7 +104,11 @@ calcPctCorrThisSpeed <- function(df,s) {
   return (answer)
 }
 
-cat(paste('I give you fitParms, psychometrics, datMeans and function calcPctCorrThisSpeed.'))
+cat(paste('I give you fitParms, psychometrics, datMeans and function calcPctCorrThisIvVal.'))
+stopifnot(exists("fitParms"))
+stopifnot(exists("psychometrics"))
+stopifnot(exists("datMeans"))
+stopifnot(exists("calcPctCorrThisIvVal"))
 
 #  title<-paste('E',expNum,' individual Ss data',sep='')
 #   quartz(title,width=10,height=7)

@@ -1,5 +1,5 @@
 #Intended to be called by doAllAnalyses.R, which 
-#provides fitParms, psychometrics, and function calcPctCorrThisSpeed
+#provides fitParms, psychometrics, and function calcPctCorrThisIvVal
 
 #go point by point to find thresholds for each criterion
 #worstLapseRate <- max(fitParms$lapseRate)
@@ -16,7 +16,7 @@ for (numObjectsThis in unique(fitParms$numObjects)) {
   
   cat('Testing criterion:',threshCriterion)
   #use point by point search to find the threshold. 
-  myThreshGetNumeric= makeMyThreshGetNumerically(threshCriterion)
+  myThreshGetNumeric= makeMyThreshGetNumerically(iv,threshCriterion)
   
   psychometricTemp<- subset(psychometrics,numObjects==numObjectsThis)
   calcThreshForPredictn<- FALSE  #because tracking-two prediction for 6, 9 objects never gets that high. Anyway this is to address
@@ -31,8 +31,11 @@ for (numObjectsThis in unique(fitParms$numObjects)) {
   threshes<- rbind(threshes, threshesThis)
 }
 
-#LN numObjects=2, numTargets=1  she doesn't go low enough. But fit should, so need to go to faster speeds
-#tmp <- subset(psychometrics,subject=="LN" & numObjects==2 & numTargets==1)
+threshes$targets<-threshes$numTargets
+#Basically to save across runs with different ivs. threshes_tfSave or threshes_speedSave = threshes
+thisThreshesName <- paste("threshes_",iv,"Save",sep='')
+assign(thisThreshesName,threshes) 
+
 
 ##########Plot individual data points for each subject. Pattern remarkably consistent across Ss, perhaps show in paper?
 tit="individual Ss threshesSpeed"
@@ -44,7 +47,7 @@ h<-h+theme_bw()
 #h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
 h<-h+ geom_point() + geom_line(aes(group=interaction(subject,numObjects))) #plot individual lines for each subject
 h<-h+ylab('thresh (rps)')
-h<-h+ggtitle("6,9 difft validates t.f. limit. Speed limits vary widely")
+if (iv=="speed") h<-h+ggtitle("6,9 difft validates t.f. limit. Speed limits vary widely")
 show(h)
 ggsave( paste('figs/',tit,'.png',sep='') )
 ############################
@@ -63,7 +66,7 @@ h<-h+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# h
 h<-h+ylab('thresh (rps)')
 h<-h+ggtitle("6,9 difft validates t.f. limit. Speed limits vary widely")
 #h<-h+coord_cartesian(ylim=c(1.5,2.5)) #have to use coord_cartesian here instead of naked ylim() to don't lose part of threshline
-if (!varyLapseRate)
+if (!varyLapseRate & iv=="speed")
   h<-h+ggtitle('lapse rate always zero')
 show(h)
 ggsave( paste('figs/',tit,'.png',sep='') )

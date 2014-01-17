@@ -1,3 +1,10 @@
+#Variables expected
+#dat
+#iv - "tf" or "speed"
+if !(exists("psychometrics$speed")) { #psychometrics must have been fit to tf
+  stopifnot(exists("psychometrics$tf")) #confirm my interpretation
+  psychometrics$speed = psychometrics$tf / psychometrics$numObjects #because always plot them in terms of speed
+}
 
 #maybe write a function that plots the psychometric functions for a dataset / experiment /criterion,
 plotIndividDataAndCurves <- function(df,psychometricCurves) {
@@ -32,7 +39,7 @@ for (expNum in seq(1,1)) {  #draw individual Ss' data, for each experiment
   g=g+facet_grid(numObjects ~ subject)+theme_bw()
   #g<-g+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
   g
-  #draw individual psychometric functions, for only one experiment
+  #draw individual psychometric functions, for only one experiment  
   thisPsychometrics <- subset(psychometrics,exp==expNum)
   g=g+geom_line(data=thisPsychometrics)
   g=g+ geom_hline(mapping=aes(yintercept=chanceRate),lty=2)  #draw horizontal line for chance performance

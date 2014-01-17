@@ -6,23 +6,38 @@
 # setwd(dirPrefix)
 
 #load("../data/data123targets269objects.RData",verbose=TRUE) #E1
+expName="123targets269objects"
 load("data/data123targets269objects.RData",verbose=TRUE) #E1
-E1<-dat
+#dat
+dat$tf = dat$speed*dat$numObjects
+for iv in c("speed","tf") {
+  
+  source('analyseExps/analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
+  #save.image(file="speedLimitsAndTargetLoad.RData") #esp. because might want to analyse this data later as testbed for more robust function fitting
+  
+  #should also do it normalizing by subjects' speed limits
+  source("analyseExps/extractThreshesAndPlot.R") #provides threshes, plots
+  
+  varName=paste("threshes_",iv,"_",expName,sep='')
+  assign(varName,threshes)
+  save(varName,file=paste("data/",varName,".Rdata",sep='')) #e.g. threshes_tf_123targets269objects.Rdata
+}
 
-source('analyseExps/analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
-#save.image(file="speedLimitsAndTargetLoad.RData") #esp. because might want to analyse this data later as testbed for more robust function fitting
 
-#First, conventional speed limits
-source('analyseExps/plotIndividDataWithPsychometricCurves.R') 
+threshes_speedSave
+threshes_tfSave
+varNameSpeed=paste("threshes_speed_",expName,sep='')
+assign(varNameSpeed,threshes_speedSave)
+varNameTf=paste("threshes_tf_",expName,sep='')
+assign(varNameTf,threshes_tfSave)
+save(varNameSpeed,file=paste(varNameSpeed,".Rdata",sep=''))
+save(varNameTf,file=paste(varNameTf,".Rdata",sep=''))
 
-#Based on %corr, but don't have much overlap in speeds in this experiment. 
-#Should eventually do it by interpolation in system where take Franconeri's theory literally
-#source('anal_costRelativeToWorstCase.R') 
+if (iv=="speed") { #if not, don't bother
+  source('analyseExps/plotIndividDataWithPsychometricCurves.R') 
+}
 
-#should also do it normalizing by subjects' speed limits
-source("analyseExps/extractThreshesAndPlot.R")
 
-#source('analyseExps/extractThreshesAndPlot.R")
 #Save anonymised data for loading by doAllAnalyses.R
 destinatnDir<-"data/"
 threshes123targets269objects = threshes
