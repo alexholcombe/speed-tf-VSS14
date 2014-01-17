@@ -2,11 +2,14 @@
 #setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/speed-tf-VSS14")
 load("data/threshes_speedHolcombeChen2013",verbose=TRUE)
 load("data/threshes_tfHolcombeChen2013",verbose=TRUE) 
-source('helpers/psychometricHelpRobust6.R') 
+
+source('helpers/psychometricHelpRobust6.R') #for makeMyPsychoCorr, 
+
 lapseRate = .01
 
 #Get the speed limit psychometric function. Based on 2 distractors mean across Ss.
 #Use HolcombeChen2013
+
 iv="speed"
 twoDistractors<-subset(threshes_speedSave,numTargets==1 & numObjects==3)
 twoDistractors<-subset(twoDistractors,criterion==0.8) #simply because criteria redundant with regrds to psychometric function parameters
@@ -14,15 +17,54 @@ twoDistractors<-subset(twoDistractors,criterion==0.8) #simply because criteria r
 meanIfNumber<-function(x) {if (is.numeric(x)) return (mean(x))  else return (unique(x)[1]) }
 twoDistractors<-aggregate(twoDistractors, by=list(temp=twoDistractors$numObjects), meanIfNumber)
 rpsParms<- twoDistractors
+colsToDelete=c("nErrs","temp","nWarns","firstWarn","subject","error","targets","method") #will use targets instead of numTargets
+rpsParms<-rpsParms[ , !names(rpsParms) %in% colsToDelete] 
+rpsParms$lapseRate<-lapseRate
+rpsParms$slopeLabel="mean"
+
+#Get empirical temporal frequency limit psychometric function. Based on 9,12 objs avg across Ss
+iv="tf"
+tfLimitParms<-subset(threshes_tfSave,(numObjects==9 | numObjects==12)) #& numTargets==1 
+tfLimitParms<-subset(tfLimitParms,criterion==0.8) #simply because criteria redundant with regrds to psychometric function parameters
+#For this, calculate average "mean" and "slope"
+tfLimitParms<-aggregate(tfLimitParms, by=list(temp=tfLimitParms$numTargets), meanIfNumber)
+tfLimitParms<-tfLimitParms[ , !names(tfLimitParms) %in% colsToDelete] 
+tfLimitParms$lapseRate<-lapseRate
+tfLimitParms$slopeLabel="mean"
+
+
+#######Try it for E1 threshes123targets269objects of HolcombeChen2014VSS.  threshes gotten by doAllAnalyses.R
+load("data/threshes123targets269objects.RData",verbose=TRUE)
+oneDistractor = subset(threshes123targets269objects,numTargets==1 & numObjects==2)
+eightDistractors = subset(threshes123targets269objects,numTargets==1 & numObjects==9)
+oneDistractorMean<-aggregate(oneDistractor, by=list(temp=oneDistractor$numObjects), meanIfNumber) #average whole thing
+eightDistractorsMean<-aggregate(eightDistractors, by=list(temp=eightDistractors$numObjects), meanIfNumber) #average whole thing
+
+rpsParms<- oneDistractorMean
 colsToDelete=c("nErrs","temp","nWarns","firstWarn","subject","error","targets") #will use targets instead of numTargets
 rpsParms<-rpsParms[ , !names(rpsParms) %in% colsToDelete] 
 rpsParms$lapseRate<-lapseRate
 rpsParms$slopeLabel="mean"
 
-#######Try it for E1 of HolcombeChen2014VSS.  E1 already been delivered by doAllAnalyses.R
+colsToDelete=c("nErrs","temp","nWarns","firstWarn","subject","error","targets") 
+tfLimitParms=eightDistractorsMean
+tfLimitParms<-tfLimitParms[ , !names(tfLimitParms) %in% colsToDelete] 
+tfLimitParms$lapseRate<-lapseRate
+tfLimitParms$slopeLabel="mean"
 #subset(E1threshes,numTargets==1 & numObjects )
 ###################################################################################################
+numSpeeds=5 #50
+speeds<-seq(0.1,4,length.out=numSpeeds)
+conditns= expand.grid(targets=c(1,2,3),numObjects=c(2,3),speed=speeds)
 
+rpsParms= rpsParms[ rep(row.names(rpsParms),times=length(conditns)),  ] #replicate
+row.names(rpsParms)=NULL
+rpsParms = cbind(rpsParms,conditns)
+
+HzParms= tfLimitParms[ rep(row.names(tfLimitParms),times=length(conditns)),  ] #replicate
+row.names(HzParms)=NULL
+HzParms= cbind(HzParms,conditns)
+###################################################################################################
 #Now simulate that for all conditions I'm interested in.
 #Duplicate the speed limit parameters for every condition of interest.
 numTargConds=c(1,2,3)  
@@ -47,6 +89,7 @@ speeds<-seq(0.1,4,length.out=numSpeeds)
 #replicate every row of rpsParms for each speed
 psychometricsSpeed<- data.frame(rpsParms[,],speed=rep(speeds,each=nrow(rpsParms)))
 #psychometricsSpeed<- data.frame(rpsParms[,],speed=rep(1:numSpeeds,each=nrow(rpsParms)))
+
 psychoCorr<- makeMyPsychoCorr2("speed")
 #psychoCorr(psychometricsSpeed[1,]) #test it
 psychometricsSpeed$myKey= 1:nrow(psychometricsSpeed)
@@ -54,24 +97,18 @@ psychometricsSpeed$myKey= 1:nrow(psychometricsSpeed)
 psychometricsSpeed$correct= daply(psychometricsSpeed,.(myKey),psychoCorr)
 psychometricsSpeed$myKey=NULL
 
-#Get empirical temporal frequency limit psychometric function. Based on 9,12 objs avg across Ss
-iv="tf"
-tfLimitParms<-subset(threshes_tfSave,(numObjects==9 | numObjects==12)) #& numTargets==1 
-tfLimitParms<-subset(tfLimitParms,criterion==0.8) #simply because criteria redundant with regrds to psychometric function parameters
-#For this, calculate average "mean" and "slope"
-tfLimitParms<-aggregate(tfLimitParms, by=list(temp=tfLimitParms$numTargets), meanIfNumber)
-tfLimitParms$lapseRate<-.01
-tfLimitParms$slopeLabel="mean"
-
-colsToDelete=c("nErrs","temp","nWarns","firstWarn","subject","error","targets") 
-tfLimitParms<-tfLimitParms[ , !names(tfLimitParms) %in% colsToDelete] 
-
+#HzParms #########################
 HzParms<-tfLimitParms
 #Replicate HzParms for each nObj
-HzParms<- HzParms[ rep(row.names(HzParms),times=length(nObjConditns)),  ] #replicate
+HzParms<- HzParms[ rep(row.names(HzParms),times=length(numTargConds)),  ] #replicate
 rownames(HzParms)<-NULL
-HzParms$numObjects= rep(nObjConditns,each=nrow(tfLimitParms))
-HzParms$chanceRate = 1/HzParms$numObjects 
+HzParms$numTargets= rep(numTargConds,each=nrow(tfLimitParms))
+
+lengthSoFar=nrow(HzParms)
+HzParms<- HzParms[ rep(row.names(HzParms),times=length(numTargConds)),  ] #replicate
+rownames(HzParms)<-NULL
+HzParms$numTargets= rep(numTargConds,each=nrow(lengthSoFar))
+HzParms$chanceRate = 1/HzParms$numObjects
 
 #Replicate HzParms for each speed, then set speed
 psychometricsHz<- data.frame(HzParms[,],speed=rep(speeds,each=nrow(HzParms)))
@@ -91,7 +128,7 @@ psychometricsHz$limit<-"tf"
 psychometrics= rbind(psychometricsSpeed,psychometricsHz)
 
 tit<-'Both_rps_and_Hz_limits'
-quartz(tit,width=5,height=7)
+quartz(tit,width=4,height=4)
 g=ggplot(data=psychometrics,
          aes_string(x="speed",y="correct",color="limit")) #linetype="factor(numObjects)",
 g=g+facet_grid(numTargets~.)
@@ -262,6 +299,8 @@ g=g+scale_color_manual(values=c("blue","red","black")) #make combined black
 g=g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
 #g=g+geom_line() #doesn't work
 show(g)
+
+#Is 2-target observed threshold (3.9 Hz) predicted by combo of 4.4 Hz and 1-target speed limit?
 
 #For doing stats, need to do it for each subject's psychometric function in each condition,
 #unless that's overkill because have some unstable Ss. But ideally would show that Ss with
