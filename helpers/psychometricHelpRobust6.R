@@ -249,7 +249,10 @@ makeMyPsychoCorr2<- function(iv) { #Very similar to makeMyPlotCurve below, only 
     if (df$method=="brglm.fit" | df$method=="glm.fit") {#Doesn't support custom link function, so had to scale from guessing->1-lapsing manually
       pfit<-unscale0to1(pfit,df$chanceRate,df$lapseRate)
     }
-    if(df$numTargets=="2P"){ #Parameters were duplicate of numTargets==1, and p's are corresponding prediction averaged with chance
+    #only one should exist
+    stopifnot( !all(c("targets","numTargets") %in% colnames(psychometricsSpeed)) ) 
+    numTargets = ifelse("targets" %in% colnames(psychometricsSpeed),df$targets,df$numTargets)
+    if(numTargets=="2P"){ #Parameters were duplicate of numTargets==1, and p's are corresponding prediction averaged with chance
       pfit<-0.5*(df$chanceRate+pfit)
     }  
     return (pfit)

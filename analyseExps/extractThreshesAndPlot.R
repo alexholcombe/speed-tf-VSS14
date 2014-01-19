@@ -1,5 +1,11 @@
 #Intended to be called by doAllAnalyses.R, which 
-#provides fitParms, psychometrics, and function calcPctCorrThisIvVal
+
+#variables expected:
+#fitParms
+#psychometrics
+#function calcPctCorrThisIvVal
+#iv
+infoMsg=paste(iv,"was fitted")
 
 #go point by point to find thresholds for each criterion
 #worstLapseRate <- max(fitParms$lapseRate)
@@ -32,13 +38,9 @@ for (numObjectsThis in unique(fitParms$numObjects)) {
 }
 
 threshes$targets<-threshes$numTargets
-#Basically to save across runs with different ivs. threshes_tfSave or threshes_speedSave = threshes
-thisThreshesName <- paste("threshes_",iv,"Save",sep='')
-assign(thisThreshesName,threshes) 
-
 
 ##########Plot individual data points for each subject. Pattern remarkably consistent across Ss, perhaps show in paper?
-tit="individual Ss threshesSpeed"
+tit=paste("individual Ss threshesSpeed",infoMsg)
 quartz(title=tit,width=4,height=3) #create graph of thresholds
 h<-ggplot(data=threshes,aes(x=numTargets,y=thresh,color=factor(numObjects)))
 #h<-h+facet_grid(criterion ~ exp)+theme_bw()
@@ -46,12 +48,12 @@ h<-h+theme_bw()
 #ylim(1.4,2.5) DO NOT use this command, it will drop some data
 #h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
 h<-h+ geom_point() + geom_line(aes(group=interaction(subject,numObjects))) #plot individual lines for each subject
-h<-h+ylab('thresh (rps)')
+h<-h+ylab(  paste('threshold (',ifelse(iv=="speed","rps","Hz"),')',sep='') )  
 if (iv=="speed") h<-h+ggtitle("6,9 difft validates t.f. limit. Speed limits vary widely")
 show(h)
 ggsave( paste('figs/',tit,'.png',sep='') )
 ############################
-tit<-"threshesSpeed"
+tit<-paste("threshesSpeed",infoMsg)
 quartz(title=tit,width=4,height=3) #create graph of thresholds
 h<-ggplot(data=threshes,aes(x=numTargets,y=thresh,color=factor(numObjects)))
 #h<-h+facet_grid(criterion ~ exp)+theme_bw()
@@ -63,7 +65,7 @@ h<-h+ stat_summary(fun.y=mean,geom="point")
 #h<-h+ stat_summary(fun.y=mean,geom="line",size=1)  #I don't understand why line doesn't work
 h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.2,conf.int=.95) #error bar
 h<-h+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
-h<-h+ylab('thresh (rps)')
+h<-h+ylab(  paste('threshold (',ifelse(iv=="speed","rps","Hz"),')',sep='') )     
 h<-h+ggtitle("6,9 difft validates t.f. limit. Speed limits vary widely")
 #h<-h+coord_cartesian(ylim=c(1.5,2.5)) #have to use coord_cartesian here instead of naked ylim() to don't lose part of threshline
 if (!varyLapseRate & iv=="speed")
@@ -75,7 +77,7 @@ ggsave( paste('figs/',tit,'.png',sep='') )
 #Temporal frequency plot
 threshes$temporalFreq <- threshes$thresh*threshes$numObjects
 ##########Plot individual data points for each subject. Pattern remarkably consistent across Ss, perhaps show in paper?
-tit="individualSsTemporalFreq"
+tit=paste("individualSsTemporalFreq",infoMsg)
 quartz(title=tit,width=5,height=3.5) #create graph of thresholds
 h<-ggplot(data=threshes,aes(x=numTargets,y=temporalFreq,color=factor(numObjects)))
 #h<-h+facet_grid(criterion ~ exp)+theme_bw()
@@ -83,24 +85,28 @@ h<-h+theme_bw()
 #ylim(1.4,2.5) DO NOT use this command, it will drop some data
 #h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
 h<-h+ geom_point() + geom_line(aes(group=interaction(subject,numObjects))) #plot individual lines for each subject
-h<-h+ylab('thresh (Hz)')
+h<-h+ylab('threshold (Hz)')
 h<-h+ggtitle("6,9 on top each other, validating t.f. limit")
 show(h)
 ggsave( paste('figs/',tit,'.png',sep='') )
 ##########################################
-tit="temporalFreqMeanThreshes"
+tit=paste("temporalFreqMeanThreshes",infoMsg)
 quartz(title=tit,width=4,height=3) #create graph of thresholds
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 h<-ggplot(data=threshes,aes(x=numTargets,y=temporalFreq,color=factor(numObjects)))
 #h<-h+facet_grid(criterion ~ exp)+theme_bw()
-h<-h+theme_bw() +ylab('thresh (Hz)')
+h<-h+theme_bw() +ylab('threshold (Hz)')
 #ylim(1.4,2.5) DO NOT use this command, it will drop some data
 #h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
 #h<-h+ geom_point() + geom_line(aes(group=interaction(subject,numObjects))) #plot individual lines for each subject
 dodgeAmt=.3
-h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeAmt))
+SEerrorbar<-function(x){ SEM <- sd(x) / (sqrt(length(x))); data.frame( y=mean(x), ymin=mean(x)-SEM, ymax=mean(x)+SEM ) }
+h=h+ stat_summary(fun.data="SEerrorbar",geom="point",size=2.5,position=position_dodge(width=dodgeAmt))
+#g<-g+ stat_summary(fun.y=mean,geom="point",size=2.5,position=position_dodge(width=dodgeAmt))
+h=h+stat_summary(fun.data="SEerrorbar",geom="errorbar",width=.25,position=position_dodge(width=dodgeAmt)) 
+#h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeAmt)) 
+#h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeAmt))
 #h<-h+ stat_summary(fun.y=mean,geom="line",size=1)  #I don't understand why line doesn't work
-h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeAmt)) 
 h<-h+ theme_bw()+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
 #h<-h+coord_cartesian(ylim=c(1.5,2.5)) #have to use coord_cartesian here instead of naked ylim() to don't lose part of threshline
 if (!varyLapseRate)

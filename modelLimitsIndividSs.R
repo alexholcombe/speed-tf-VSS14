@@ -6,7 +6,7 @@ source('helpers/psychometricHelpRobust6.R') #for makeMyPsychoCorr,
 lapseRate = .01 #Should change fitting so it uses constant lapseRate, or else
 #incorporate lapseRate into this modelling
 meanIfNumber<-function(x) {if (is.numeric(x)) return (mean(x))  else return (unique(x)[1]) }
-colsToDelete=c("nErrs","temp","nWarns","firstWarn","subject","error","targets") #will use targets instead of numTargets
+colsToDelete=c("nErrs","temp","nWarns","firstWarn","error","targets") #will use targets instead of numTargets
 
 # #Get the speed limit psychometric function. Based on 2 distractors mean across Ss.
 # #Use HolcombeChen2013
@@ -37,34 +37,54 @@ load("data/threshes_speed_123targets269objects.Rdata",verbose=TRUE)
 oneDistractor = subset(threshes_speed_123targets269objects,numTargets==1 & numObjects==2)
 load("data/threshes_tf_123targets269objects.Rdata",verbose=TRUE)
 eightDistractors = subset(threshes_tf_123targets269objects,numTargets==1 & numObjects==9)
-oneDistractorMean<-aggregate(oneDistractor, by=list(temp=oneDistractor$numObjects), meanIfNumber) #average whole thing
-eightDistractorsMean<-aggregate(eightDistractors, by=list(temp=eightDistractors$numObjects), meanIfNumber) #average whole thing
+#oneDistractorMean<-aggregate(oneDistractor, by=list(temp=oneDistractor$numObjects), meanIfNumber) #average whole thing
+#eightDistractorsMean<-aggregate(eightDistractors, by=list(temp=eightDistractors$numObjects), meanIfNumber) #average whole thing
 
-rpsParms<- oneDistractorMean
+rpsParms<- oneDistractor #oneDistractorMean
 rpsParms<-rpsParms[ , !names(rpsParms) %in% colsToDelete] 
 rpsParms$lapseRate<-lapseRate
-rpsParms$slopeLabel="mean"
 
-tfLimitParms=eightDistractorsMean
+tfLimitParms= eightDistractors#eightDistractorsMean
 tfLimitParms<-tfLimitParms[ , !names(tfLimitParms) %in% colsToDelete] 
 tfLimitParms$lapseRate<-lapseRate
-tfLimitParms$slopeLabel="mean"
 #subset(E1threshes,numTargets==1 & numObjects )
 ###################################################################################################
 numSpeeds=50 #50
 speeds<-seq(0.1,4,length.out=numSpeeds)
-conditns= expand.grid(targets=c(1,2,3),numObjects=c(2,3),speed=speeds)
+conditns= expand.grid( targets=c(1,2,3),numObjects=c(2,3),
+                       speed=speeds,subject=unique(rpsParms$subject) )
 
-psychometricsSpeed= rpsParms[ rep(row.names(rpsParms),times=nrow(conditns)),  ] #replicate
+#psychometricsSpeed= rpsParms[ rep(row.names(rpsParms),times=nrow(conditns)),  ] #replicate
+psychometricsSpeed= rpsParms
 row.names(psychometricsSpeed)= NULL
 psychometricsSpeed$numObjects=NULL #will be replaced by conditns
-psychometricsSpeed = cbind(psychometricsSpeed,conditns)
+psychometricsSpeed$targets = psychometricsSpeed$numTargets
+psychometricsSpeed$numTargets=NULL #will use targets
+
+#Do I have too many of these rows per codndition?
+#YES becaust it multiplied instead of merging.
+#Avoding that would seem to mean not including subject in conditions
+#factors<-c("numObjects","targets","speed","subject") #debugON
+# factors<-c("subject") #debugON
+# ddply(psychometricsSpeed,factors,function(df) {dh<<-df;STOP}) #debugON
+# dh
+#Could it be because rpsParms has numTargets rather than targets?
+nrow(merge(psychometricsSpeed,conditns))
+#It's because you have many matches, because for each psychometricsSpeed
+#all you got is AH, which matches all the AH's
+
+psychometricsSpeed = merge(psychometricsSpeed,conditns)
+#psychometricsSpeed = cbind(psychometricsSpeed,conditnsEachSubject)
 psychometricsSpeed$chanceRate = 1/psychometricsSpeed$numObjects
-  
-psychometricsHz= tfLimitParms[ rep(row.names(tfLimitParms),times=nrow(conditns)),  ] #replicate
+
+#psychometricsHz= tfLimitParms[ rep(row.names(tfLimitParms),times=nrow(conditns)),  ] #replicate
+psychometricsHz= tfLimitParms
 row.names(psychometricsHz)=NULL
 psychometricsHz$numObjects=NULL #will be replaced by conditns
-psychometricsHz= cbind(psychometricsHz,conditns)
+psychometricsHz$targets = psychometricsHz$numTargets
+psychometricsHz$numTargets=NULL #will use conditns' targets
+#psychometricsHz= cbind(psychometricsHz,conditnsEachSubject)
+psychometricsHz= merge(psychometricsHz,conditns)
 psychometricsHz$chanceRate = 1/psychometricsHz$numObjects
 
 ###################################################################################################
@@ -85,14 +105,16 @@ psychometricsHz$limit<-"tf"
 
 #give it same number of columns as Hz by adding tf
 psychometricsSpeed$tf=psychometricsSpeed$speed*psychometricsSpeed$numObjects
+
 psychometrics= rbind(psychometricsSpeed,psychometricsHz)
 
 tit<-'Both_rps_and_Hz_limits'
 quartz(tit,width=4,height=4)
-g=ggplot(data=psychometrics,
-         aes_string(x="speed",y="correct",color="limit")) #linetype="factor(numObjects)",
-g=g+geom_line()+theme_bw()
-g=g+facet_grid(targets~numObjects)
+g=ggplot(data=subset(psychometrics,targets==1),
+    aes(x=speed,y=correct,color=limit,shape=subject)) 
+g=g+geom_point()+theme_bw()
+g=g+geom_line()
+g=g+facet_grid(.~numObjects)
 g=g+ylab('Proportion Correct')
 g=g+xlab('Speed (rps)') 
 g=g+ggtitle('overlap much greater for 3-object case')
@@ -163,7 +185,12 @@ afterBothLims<-function(df) {
   speedParms$correct = pAfterBoth
   return(speedParms)
 }
-factors<-c("numObjects","targets","speed")
+factors<-c("numObjects","targets","speed","subject")
+
+#psAfterBoth= ddply(psychometrics,factors,function(df){dg<<-df; STOP})
+
+# ddply(psychometrics,factors,function(df){
+#                print(nrow(subset(df,limit=="speed")))})
 
 psAfterBoth= ddply(psychometrics,factors,afterBothLims)
 psAfterBoth$limit= "combined"
@@ -175,10 +202,11 @@ psychometricsLims= rbind(psychometrics,psAfterBoth)
 tit<-'rps_and_Hz_limits_combined'
 quartz(tit,width=5,height=3.5)
 g=ggplot(data=psychometricsLims, alpha=.5,
-         aes_string(x="speed",y="correct",color="limit")) #linetype="factor(numObjects)"
+      aes(x=speed,y=correct,color=limit,shape=subject))
+g=g+geom_point()
 g=g+geom_line(aes(size=as.factor(limit)))+theme_bw()
 g=g+scale_size_manual(values=c(3,1,1)) #combined thickest
-g=g+facet_grid(numTargets~numObjects)
+g=g+facet_grid(targets~numObjects)
 g=g+ylab('Proportion Correct')
 g=g+xlab('Speed (rps)') 
 g=g+ggtitle('interactn greater for 3-object case')
@@ -239,20 +267,22 @@ threshes$limit = factor(threshes$limit,unique(threshes$limit)[c(2,3,1)]) #speed,
 #I need a plot of the thresholds too, not the psychometric functions
 tit<-'threshes plot'
 quartz(tit,width=4,height=3.5)
-g=ggplot(threshes,aes(x=limit,y=thresh))
+g=ggplot(threshes,aes(x=limit,y=thresh,shape=subject))
 g=g+theme_bw()+ facet_grid(targets~numObjects)
-g=g+geom_point()
+dodgeAmt=0.2
+g=g+geom_point(size=2.5,position=position_dodge(width=dodgeAmt))
+g=g+geom_line(aes(group=subject),position=position_dodge(dodgeAmt))
 show(g)
 
 quartz(tit,width=3.2,height=3.5)
-g=ggplot(threshes,
-         aes(x=factor(numObjects),y=thresh,color=limit,alpha=limit))
+g=ggplot(threshes, aes(
+     x=factor(numObjects),y=thresh,color=limit,alpha=limit,shape=subject))
 g=g+theme_bw()+ facet_grid(targets~.)
 g=g+geom_point(size=2.5,position=position_dodge(width=.2))
+#g=g+geom_line() #doesn't work
 g=g+scale_alpha_manual(values=c(.6,.6,1)) #combined thickest
 g=g+scale_color_manual(values=c("blue","red","black")) #make combined black
 g=g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
-#g=g+geom_line() #doesn't work
 show(g)
 
 #Is 2-target observed threshold (3.9 Hz) predicted by combo of 4.4 Hz and 1-target speed limit?
