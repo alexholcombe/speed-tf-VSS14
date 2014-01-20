@@ -1,6 +1,5 @@
 #working directory set by starting Rstudio via .Rproj file
 #setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/speed-tf-VSS14")
-
 source('helpers/psychometricHelpRobust6.R') #for makeMyPsychoCorr, 
 
 lapseRate = .01 #Should change fitting so it uses constant lapseRate, or else
@@ -8,31 +7,9 @@ lapseRate = .01 #Should change fitting so it uses constant lapseRate, or else
 meanIfNumber<-function(x) {if (is.numeric(x)) return (mean(x))  else return (unique(x)[1]) }
 colsToDelete=c("nErrs","temp","nWarns","firstWarn","error","targets") #will use targets instead of numTargets
 
-# #Get the speed limit psychometric function. Based on 2 distractors mean across Ss.
-# #Use HolcombeChen2013
-# load("data/threshes_speedHolcombeChen2013",verbose=TRUE)
-# load("data/threshes_tfHolcombeChen2013",verbose=TRUE) 
-#
-# twoDistractors<-subset(threshes_speedSave,numTargets==1 & numObjects==3)
-# twoDistractors<-subset(twoDistractors,criterion==0.8) #simply because criteria redundant with regrds to psychometric function parameters
-# #For this, calculate average "mean" and "slope"
-# twoDistractors<-aggregate(twoDistractors, by=list(temp=twoDistractors$numObjects), meanIfNumber)
-# rpsParms<- twoDistractors
-# rpsParms<-rpsParms[ , !names(rpsParms) %in% colsToDelete] 
-# rpsParms$lapseRate<-lapseRate
-# rpsParms$slopeLabel="mean"
-# 
-# #Get empirical temporal frequency limit psychometric function. Based on 9,12 objs avg across Ss
-# tfLimitParms<-subset(threshes_tfSave,(numObjects==9 | numObjects==12)) #& numTargets==1 
-# tfLimitParms<-subset(tfLimitParms,criterion==0.8) #simply because criteria redundant with regrds to psychometric function parameters
-# #For this, calculate average "mean" and "slope"
-# tfLimitParms<-aggregate(tfLimitParms, by=list(temp=tfLimitParms$numTargets), meanIfNumber)
-# tfLimitParms<-tfLimitParms[ , !names(tfLimitParms) %in% colsToDelete] 
-# tfLimitParms$lapseRate<-lapseRate
-# tfLimitParms$slopeLabel="mean"
-
-
 #######Try it for E1 threshes123targets269objects of HolcombeChen2014VSS.  threshes gotten by doAllAnalyses.R
+#Modeled effect of additional object on speed threshold (taking into account t.f. limit).
+#For additional targets, want to check if constraint of lower t.f. limit sufficient to explain decrease of 2-object speed limit with targets
 load("data/threshes_speed_123targets269objects.Rdata",verbose=TRUE)
 oneDistractor = subset(threshes_speed_123targets269objects,numTargets==1 & numObjects==2)
 load("data/threshes_tf_123targets269objects.Rdata",verbose=TRUE)
@@ -60,18 +37,6 @@ row.names(psychometricsSpeed)= NULL
 psychometricsSpeed$numObjects=NULL #will be replaced by conditns
 psychometricsSpeed$targets = psychometricsSpeed$numTargets
 psychometricsSpeed$numTargets=NULL #will use targets
-
-#Do I have too many of these rows per codndition?
-#YES becaust it multiplied instead of merging.
-#Avoding that would seem to mean not including subject in conditions
-#factors<-c("numObjects","targets","speed","subject") #debugON
-# factors<-c("subject") #debugON
-# ddply(psychometricsSpeed,factors,function(df) {dh<<-df;STOP}) #debugON
-# dh
-#Could it be because rpsParms has numTargets rather than targets?
-nrow(merge(psychometricsSpeed,conditns))
-#It's because you have many matches, because for each psychometricsSpeed
-#all you got is AH, which matches all the AH's
 
 psychometricsSpeed = merge(psychometricsSpeed,conditns)
 #psychometricsSpeed = cbind(psychometricsSpeed,conditnsEachSubject)
@@ -180,7 +145,6 @@ afterBothLims<-function(df) {
   nObj = speedParms$numObjects
   lapseRate = speedParms$lapseRate
   pAfterBoth = pAfterBothLimits(pBasedOnSpeedLimit,pBasedOnTFlimit,nObj,lapseRate)
-  #cat(pBasedOnSpeedLimit,pBasedOnTFlimit,df$pAfterBoth) #debugOFF
   #only want to return one row, the p predicted after both limits imposed
   speedParms$correct = pAfterBoth
   return(speedParms)
@@ -265,25 +229,30 @@ ggsave( paste('figs/',tit,'.png',sep='') )
 threshes$limit = factor(threshes$limit,unique(threshes$limit)[c(2,3,1)]) #speed,tf,combined
 
 #I need a plot of the thresholds too, not the psychometric functions
-tit<-'threshes plot'
-quartz(tit,width=4,height=3.5)
-g=ggplot(threshes,aes(x=limit,y=thresh,shape=subject))
-g=g+theme_bw()+ facet_grid(targets~numObjects)
-dodgeAmt=0.2
-g=g+geom_point(size=2.5,position=position_dodge(width=dodgeAmt))
-g=g+geom_line(aes(group=subject),position=position_dodge(dodgeAmt))
-show(g)
-
 quartz(tit,width=3.2,height=3.5)
 g=ggplot(threshes, aes(
      x=factor(numObjects),y=thresh,color=limit,alpha=limit,shape=subject))
 g=g+theme_bw()+ facet_grid(targets~.)
-g=g+geom_point(size=2.5,position=position_dodge(width=.2))
+dodgeAmt=0.2
+g=g+geom_point(size=2.5,position=position_dodge(width=dodgeAmt))
+combindOnly=subset(threshes,limit=="combined")
+g=g+geom_line(data=combindOnly,aes(group=subject),position=position_dodge(dodgeAmt))
 #g=g+geom_line() #doesn't work
 g=g+scale_alpha_manual(values=c(.6,.6,1)) #combined thickest
 g=g+scale_color_manual(values=c("blue","red","black")) #make combined black
 g=g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
 show(g)
+
+tit<-'threshes plot'
+quartz(tit,width=4,height=3.5)
+h=ggplot(threshes,aes(x=limit,y=thresh,shape=subject))
+h=h+theme_bw()+ facet_grid(targets~numObjects)
+dodgeAmt=0.2
+h=h+geom_point(size=2.5,position=position_dodge(width=dodgeAmt))
+h=h+geom_line(aes(group=subject),position=position_dodge(dodgeAmt))
+show(h)
+###############################################################################
+#Now plot cost of going from 1 distractor to 2
 
 #Is 2-target observed threshold (3.9 Hz) predicted by combo of 4.4 Hz and 1-target speed limit?
 
@@ -292,6 +261,40 @@ show(g)
 #particularly low t.f. limit also have low speed - 3 distractors limit
 
 #For 2 targets and 3 targets, which limits, speed or temporal frequency?
+#Can decrease in speed limit be accounted for entirely by t.f. decrease even with 1 distractor?
+###############################################################################
+#Now plot empirical thresholds on the model plot
+load("data/E2_CRT_spinzter.Rdata",verbose=TRUE)
+#Dammit only method of adjustment used both 2 and 3 objects. So, not comparable. But,
+#can plot its thresholds for 2 vs. 3 objects to see if decrement comparable
+methodAdjst23objs = dat# subset(dat, device=="CRT")
+#But the method of adjustment won't be subject to difference in chance rate. So, really need
+#objective experiment.
+#Is objective part most comparable to adjustment midpoint threshold or what?
+methodAdjst23objs$targets = 1
+methodAdjst23objs$limit = "heck"
+methodAdjst23objs[ methodAdjst23objs$numObjects==2, ]$limit="speed"
+methodAdjst23objs[ methodAdjst23objs$numObjects==3, ]$limit="combined"
 
-#What have I got in terms of data? I've only gotten data from HolcombeChen2013. Time to
-#analyze and save new data as well esp. because tf limits lower.
+#aggregate across ecc, device, direction, trackRing?
+#Because stat_summary seems to fail when no data exists for some condition
+meanAcrossAdjst<-aggregate(methodAdjst23objs, by=list(
+    tmp=methodAdjst23objs$limit,tmp2=methodAdjst23objs$subject,tmp3=methodAdjst23objs$numObjects), meanIfNumber) #average whole thing
+
+meanAcrossAdjst[meanAcrossAdjst$numObjects==2,]$numObjects=3 #this isn't really right because doesn't adjust for chance, but shoehorns onto modeling graph 
+h+geom_point(dat=meanAcrossAdjst,color="red")+geom_line(data=meanAcrossAdjst,aes(group=subject),color="red")
+#verdict: decrease is about what would predict. I guess I should present methodAdjstment as something to validate a traditnl CRT experiment
+#So model 1,2,3 targets and then come back to this?
+
+
+quartz(tit,width=4,height=3.5)
+h=ggplot(meanAcrossAdjst,aes(x=limit,y=thresh,shape=subject))
+h=h+theme_bw()+ facet_grid(targets~numObjects)
+h
+h+stat_summary(position=position_dodge(width=.2))
+h+stat_summary(data=methodAdjst23objs) #, mapping=aes())
+h+stat_summary(data=meanAcrossAdjst) #, mapping=aes())
+
+h+geom_point
+h=h+stat_summary(position=position_dodge(width=.2))
+h
