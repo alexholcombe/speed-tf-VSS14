@@ -2,8 +2,6 @@
 #setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/speed-tf-VSS14")
 source('helpers/psychometricHelpRobust6.R') #for makeMyPsychoCorr, 
 
-lapseRate = .01 #Should change fitting so it uses constant lapseRate, or else
-#incorporate lapseRate into this modelling
 meanIfNumber<-function(x) {if (is.numeric(x)) return (mean(x))  else return (unique(x)[1]) }
 colsToDelete=c("nErrs","temp","nWarns","firstWarn","error","targets") #will use targets instead of numTargets
 
@@ -11,39 +9,42 @@ colsToDelete=c("nErrs","temp","nWarns","firstWarn","error","targets") #will use 
 #Modeled effect of additional object on speed threshold (taking into account t.f. limit).
 #For additional targets, want to check if constraint of lower t.f. limit sufficient to explain decrease of 2-object speed limit with targets
 load("data/threshes_speed_123targets269objects.Rdata",verbose=TRUE)
-oneDistractor = subset(threshes_speed_123targets269objects,numTargets==1 & numObjects==2)
+speedLimitEachSubject = subset(threshes_speed_123targets269objects,numTargets==1 & numObjects==2)
 load("data/threshes_tf_123targets269objects.Rdata",verbose=TRUE)
-eightDistractors = subset(threshes_tf_123targets269objects,numTargets==1 & numObjects==9)
+#Assume tfLimit changes with targets, but speed limit doesn't.
+#Eventually, need to compare to converse prediction that speedLimit changes with targets, but tfLimit doesn't
+tfLimitEachSubject = subset(threshes_tf_123targets269objects, numObjects==9)
 #oneDistractorMean<-aggregate(oneDistractor, by=list(temp=oneDistractor$numObjects), meanIfNumber) #average whole thing
 #eightDistractorsMean<-aggregate(eightDistractors, by=list(temp=eightDistractors$numObjects), meanIfNumber) #average whole thing
 
-rpsParms<- oneDistractor #oneDistractorMean
-rpsParms<-rpsParms[ , !names(rpsParms) %in% colsToDelete] 
-rpsParms$lapseRate<-lapseRate
+speedLimitEachSubject<-speedLimitEachSubject[ , !names(speedLimitEachSubject) %in% colsToDelete] 
+#speedLimitEachSubject$lapseRate<-lapseRate
 
-tfLimitParms= eightDistractors#eightDistractorsMean
-tfLimitParms<-tfLimitParms[ , !names(tfLimitParms) %in% colsToDelete] 
-tfLimitParms$lapseRate<-lapseRate
-#subset(E1threshes,numTargets==1 & numObjects )
+tfLimitEachSubject<-tfLimitEachSubject[ , !names(tfLimitEachSubject) %in% colsToDelete] 
+#tfLimitEachSubject$lapseRate<-lapseRate
 ###################################################################################################
+#Create predicted psychometric curve for each condition I'm interested in, based on theoretical speed limit
 numSpeeds=50 #50
 speeds<-seq(0.1,4,length.out=numSpeeds)
-conditns= expand.grid( targets=c(1,2,3),numObjects=c(2,3),
-                       speed=speeds,subject=unique(rpsParms$subject) )
+nTarg=c(1,2,3)
+conditns= expand.grid( targets=nTarg, numObjects=c(2,3),
+                       speed=speeds,subject=unique(speedLimitEachSubject$subject) )
 
-#psychometricsSpeed= rpsParms[ rep(row.names(rpsParms),times=nrow(conditns)),  ] #replicate
-psychometricsSpeed= rpsParms
+psychometricsSpeed= speedLimitEachSubject
+#replicate for each number of targets
+rn = row.names(psychometricsSpeed)
+psychometricsSpeed= psychometricsSpeed[ rep(rn, times=length(nTarg)),  ] #replicate whole thing for each target num
+psychometricsSpeed$targets = nTarg[ rep(seq(1,length(nTarg)), each=length(rn)) ] #rep each element 
 row.names(psychometricsSpeed)= NULL
-psychometricsSpeed$numObjects=NULL #will be replaced by conditns
-psychometricsSpeed$targets = psychometricsSpeed$numTargets
-psychometricsSpeed$numTargets=NULL #will use targets
+psychometricsSpeed$numObjects=NULL #will be replaced, padded-out by conditns
+psychometricsSpeed$numTargets=NULL #will use conditns' targets
 
 psychometricsSpeed = merge(psychometricsSpeed,conditns)
-#psychometricsSpeed = cbind(psychometricsSpeed,conditnsEachSubject)
 psychometricsSpeed$chanceRate = 1/psychometricsSpeed$numObjects
 
-#psychometricsHz= tfLimitParms[ rep(row.names(tfLimitParms),times=nrow(conditns)),  ] #replicate
-psychometricsHz= tfLimitParms
+#Create predicted psychometric curve for each condition I'm interested in, based on theoretical tf limits
+psychometricsHz= tfLimitEachSubject
+#includes separate limit for each target number
 row.names(psychometricsHz)=NULL
 psychometricsHz$numObjects=NULL #will be replaced by conditns
 psychometricsHz$targets = psychometricsHz$numTargets
@@ -51,10 +52,8 @@ psychometricsHz$numTargets=NULL #will use conditns' targets
 #psychometricsHz= cbind(psychometricsHz,conditnsEachSubject)
 psychometricsHz= merge(psychometricsHz,conditns)
 psychometricsHz$chanceRate = 1/psychometricsHz$numObjects
-
-###################################################################################################
+##########################calculate predicted %correct
 psychoCorr<- makeMyPsychoCorr2("speed")
-#calculate predicted %correct
 psychometricsSpeed$myKey= 1:nrow(psychometricsSpeed)
 psychometricsSpeed$correct= daply(psychometricsSpeed,.(myKey),psychoCorr)
 psychometricsSpeed$myKey=NULL
@@ -75,11 +74,11 @@ psychometrics= rbind(psychometricsSpeed,psychometricsHz)
 
 tit<-'Both_rps_and_Hz_limits'
 quartz(tit,width=4,height=4)
-g=ggplot(data=subset(psychometrics,targets==1),
+g=ggplot(data=psychometrics,
     aes(x=speed,y=correct,color=limit,shape=subject)) 
 g=g+geom_point()+theme_bw()
 g=g+geom_line()
-g=g+facet_grid(.~numObjects)
+g=g+facet_grid(targets~numObjects)
 g=g+ylab('Proportion Correct')
 g=g+xlab('Speed (rps)') 
 g=g+ggtitle('overlap much greater for 3-object case')
@@ -88,29 +87,38 @@ ggsave( paste('figs/',tit,'.png',sep='') )
 
 #################################################################################
 #Multiply it with each other, then extract resulting threshes
-pAfterBothLimits<- function(p1,p2,numObjects,lapse) {
+pAfterBothLimits<- function(p1,p2,numObjects,lapse1,lapse2) {
   #Take guesses out (assumption: high-threshold model) of each p
   #to yield t, the "true function"- probability of successful tracking.
   #Otherwise, have to guess.
   #Then multiply probs together and re-insert guessing rate
-  l = lapse
+  l1 = lapse1; l2=lapse2;
   c = 1/numObjects #chanceRate
   #Derived the below by taking standard psychometric function
   # p = l*c + (1-l)(t + (1-t)*c) #and solving for t
-  t1 = (p1 - c) / (1 + l*c - l - c)
-  t2 = (p2 - c) / (1 + l*c - l - c)
-  #probability don't fall afoul of either limit
+  t1 = (p1 - c) / (1 + l1*c - l1 - c)
+  t2 = (p2 - c) / (1 + l2*c - l2 - c)
+  #probability that you don't fall afoul of either limit
   b = t1*t2
   #re-insert lapse rate and guessing
+  #Not obvious how to combine lapse rates. Using different lapse rates
+  #implies that somehow in tf regime you make more non-speed-related mistakes?!
+  #If so, should use something like max(l1,l2)
+  #But concept above of different lapse rates doesn't make sense, unless
+  #it's a proxy for poor fit or noise. In which case, take average
+  l= (l1+l2)/2
   pAfter = l*c + (1-l)*(b + (1-b)*c)
   #cat('p1=',p1,' p2=',p2,' b=',b, ' pAfter=',pAfter)
   #cat('t1=',t1,' t2=',t2,' b=',b, ' pAfter=',pAfter)
   as.numeric(pAfter)
 }
+#Should I allow different lapse rate for speed limit and tf limit? Doesn't seem to
+#make sense if it's the same subject! So should probably fit with constant lapse rate
+#originally.
 
-# pAfterBothLimits(0.9896978,0.9889311,3,.01)
+# pAfterBothLimits(0.9896978,0.9889311,3,.01,.01)
 # 
-# pAfterBothLimits(0.9,0.8,3,.01)
+# pAfterBothLimits(0.9,0.8,3,.01,.02)
 # 
 # speeds = seq(.5,2,length.out=4)
 # for (s in speeds) {
@@ -137,14 +145,14 @@ afterBothLims<-function(df) {
   tfParms= subset(df,limit=="tf")
   stopifnot(nrow(speedParms)>0, nrow(tfParms)>0)
   
-  if ((speedParms$numObjects != tfParms$numObjects) | 
-        (speedParms$lapseRate!=tfParms$lapseRate)) {
+  if ((speedParms$numObjects != tfParms$numObjects)) {
     stop("afterBothLims: Corresponding params not same conditions") }
   pBasedOnSpeedLimit = psychoCorrSpeed(speedParms)
   pBasedOnTFlimit = psychoCorrTf(tfParms)
   nObj = speedParms$numObjects
-  lapseRate = speedParms$lapseRate
-  pAfterBoth = pAfterBothLimits(pBasedOnSpeedLimit,pBasedOnTFlimit,nObj,lapseRate)
+  #(speedParms$lapseRate!=tfParms$lapseRate)
+  l1 = speedParms$lapseRate; l2 = tfParms$lapseRate
+  pAfterBoth = pAfterBothLimits(pBasedOnSpeedLimit,pBasedOnTFlimit,nObj,l1,l2)
   #only want to return one row, the p predicted after both limits imposed
   speedParms$correct = pAfterBoth
   return(speedParms)
@@ -187,9 +195,8 @@ show(g)
 
 #Extract threshes from model curves. 
 threshes <- data.frame()
-threshCriteria<-c(0.8)
-for (threshCriterion in threshCriteria) {
-  
+threshCriteria<-c(0.75)
+for (threshCriterion in threshCriteria) {  
   psychometricTemp<-psychometricsLims
   factorsPlusLimitType<-c(factors,"limit")
   factorsPlusLimitType= factorsPlusLimitType[ factorsPlusLimitType!="speed" ] #delete speed
@@ -243,14 +250,27 @@ g=g+scale_color_manual(values=c("blue","red","black")) #make combined black
 g=g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
 show(g)
 
-tit<-'threshes plot'
-quartz(tit,width=4,height=3.5)
-h=ggplot(threshes,aes(x=limit,y=thresh,shape=subject))
-h=h+theme_bw()+ facet_grid(targets~numObjects)
-dodgeAmt=0.2
-h=h+geom_point(size=2.5,position=position_dodge(width=dodgeAmt))
-h=h+geom_line(aes(group=subject),position=position_dodge(dodgeAmt))
-show(h)
+showIndividData=TRUE
+if (!showIndividData) {
+  tit<-'threshesTheory'
+  quartz(tit,width=4.5,height=4)
+  h=ggplot(threshes,aes(x=limit,y=thresh,shape=subject))
+  h=h+theme_bw()+ facet_grid(targets~numObjects)
+  dodge=position_dodge(width=0.2)
+  h=h+stat_summary(fun.data="mean_cl_boot",aes(group=targets),geom="errorbar",conf.int=.67,width=.2)
+  h=h+stat_summary(fun.y=mean,geom="point",aes(group=targets),size=2.5)
+  h=h+stat_summary(fun.y=mean,aes(group=targets),geom="line")
+  show(h)
+} else {
+  tit<-'threshesTheoryEachSubject'
+  quartz(tit,width=8,height=7)  #(tit,width=4,height=3.5)
+  h=ggplot(threshes,aes(x=limit,y=thresh,shape=subject))
+  h=h+theme_bw()+ facet_grid(targets~numObjects)
+  dodgeAmt=0.2
+  h=h+geom_point(size=2.5,position=position_dodge(width=dodgeAmt))
+  h=h+geom_line(aes(group=subject),position=position_dodge(dodgeAmt))
+  show(h)
+}
 ###############################################################################
 #Now plot cost of going from 1 distractor to 2
 
@@ -264,8 +284,50 @@ show(h)
 #Can decrease in speed limit be accounted for entirely by t.f. decrease even with 1 distractor?
 ###############################################################################
 #Now plot empirical thresholds on the model plot
-load("data/E2_CRT_spinzter.Rdata",verbose=TRUE)
+#
+#1-target 2 objs assumed to be true speed limit. Let's see if decrease with targets can be
+#explained by 2-target, 3-target tf limits
+twoObjs2_3targets = subset(threshes_speed_123targets269objects,numObjects==2)# & numTargets>1)
+
+#Check thresholds gotten originally for 1target2objs matches new limits found by
+#generating psychometric function from params, then extracting thresholds
+newThresh2Objs1target = subset(threshes,targets==1 & numObjects==2 & limit=="speed")
+oldThresh2Objs1target = subset(twoObjs2_3targets, numTargets==1 & numObjects==2 )
+colsToCompare=c("numObjects","targets","subject","criterion","thresh","slopeThisCrit")
+oldThresh2Objs1target=oldThresh2Objs1target[,colsToCompare]
+newThresh2Objs1target=newThresh2Objs1target[,colsToCompare]
+if (any(newThresh2Objs1target$criterion != oldThresh2Objs1target$criterion)) {
+  warning("You used a different criterion to extract predicted thresholds")
+  stop("You used a different criterion to extract predicted thresholds")
+}
+colsToMerge=c("numObjects","targets","subject","criterion")
+cmp= merge(oldThresh2Objs1target,newThresh2Objs1target,by=colsToMerge)
+if (any( abs(cmp$thresh.x-cmp$thresh.y) >.03 ) | any( abs(cmp$slopeThisCrit.x-cmp$slopeThisCrit.y) >.1 )) {
+  msg=paste("Thresholds extracted now differ from those saved before, by average of",
+            as.character(round(mean(abs(cmp$thresh.x-cmp$thresh.y)),2)))
+  msgSlopeDiff=paste("Slopes extracted now differ from those saved before, by average of",
+                     as.character(round(mean(abs(cmp$slopeThisCrit.x-cmp$slopeThisCrit.y)),2)))
+  stop(paste(msg,'\n',msgSlopeDiff))
+}
+                               
+twoObjs2_3targets$limit= "combined"
+#h+stat_summary(fun.y=mean,geom="point",dat=TwoObjs2_3targets,color="red")
+h=h+geom_point(dat=twoObjs2_3targets,aes(group=subject),color="red",position=position_dodge(width=0.6))
+#h=h+stat_summary(dat=TwoObjs2_3targets,fun.data="mean_cl_boot",geom="errorbar",conf.int=.67,
+#               position=position_dodge(width=0.6),color="red",width=.2) 
+#+geom_line(data=2objs2_3targets,aes(group=subject),color="red")
+
+captn="Fit with lapse rate=",
+h=h+ ggtitle(captn) +theme(plot.title=element_text(size=7))
+#theme(plot.title = element_text(lineheight=3, face="bold", color="black", size=29))
+show(h)
+tit<-paste(tit,'withActualResult',sep='')
+ggsave( paste('figs/',tit,'.png',sep='') )
+dev.set(dev.prev()) #because ggsave changes which window active, but I want to modify more
+
+#######add 2->3 objects actual finding
 #Dammit only method of adjustment used both 2 and 3 objects. So, not comparable. But,
+load("data/E2_CRT_spinzter.Rdata",verbose=TRUE)
 #can plot its thresholds for 2 vs. 3 objects to see if decrement comparable
 methodAdjst23objs = dat# subset(dat, device=="CRT")
 #But the method of adjustment won't be subject to difference in chance rate. So, really need
@@ -277,24 +339,24 @@ methodAdjst23objs[ methodAdjst23objs$numObjects==2, ]$limit="speed"
 methodAdjst23objs[ methodAdjst23objs$numObjects==3, ]$limit="combined"
 
 #aggregate across ecc, device, direction, trackRing?
-#Because stat_summary seems to fail when no data exists for some condition
 meanAcrossAdjst<-aggregate(methodAdjst23objs, by=list(
     tmp=methodAdjst23objs$limit,tmp2=methodAdjst23objs$subject,tmp3=methodAdjst23objs$numObjects), meanIfNumber) #average whole thing
 
 meanAcrossAdjst[meanAcrossAdjst$numObjects==2,]$numObjects=3 #this isn't really right because doesn't adjust for chance, but shoehorns onto modeling graph 
-h+geom_point(dat=meanAcrossAdjst,color="red")+geom_line(data=meanAcrossAdjst,aes(group=subject),color="red")
+#Can't label subject with shape because too many additional subjects
+#Not worth it anyway for incomparable method of adjustment
+h=h+geom_point(dat=meanAcrossAdjst,shape=1,color="blue",position=position_dodge(width=0.6))
+show(h)
+tit<-paste(tit,'withMethodAdjstment',sep='')
+ggsave( paste('figs/',tit,'.png',sep='') )
+
+#h+geom_line(data=meanAcrossAdjst,aes(shape=subject),color="blue",lty=2,position=position_dodge(width=0.6))
+#h+geom_line(data=meanAcrossAdjst,aes(group=subject),color="blue",lty=2,position=position_dodge(width=0.6))
 #verdict: decrease is about what would predict. I guess I should present methodAdjstment as something to validate a traditnl CRT experiment
 #So model 1,2,3 targets and then come back to this?
 
+############################################################################
+#Plot amount decrement expected vs. amount found
+#Eventually, might have non-method-adjustment numbers for 2 vs. 3 objects too
 
-quartz(tit,width=4,height=3.5)
-h=ggplot(meanAcrossAdjst,aes(x=limit,y=thresh,shape=subject))
-h=h+theme_bw()+ facet_grid(targets~numObjects)
-h
-h+stat_summary(position=position_dodge(width=.2))
-h+stat_summary(data=methodAdjst23objs) #, mapping=aes())
-h+stat_summary(data=meanAcrossAdjst) #, mapping=aes())
 
-h+geom_point
-h=h+stat_summary(position=position_dodge(width=.2))
-h
