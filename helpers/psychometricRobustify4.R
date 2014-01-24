@@ -20,6 +20,12 @@ threshold_slope <- function( pfit, xfit, criterion) {
 		stop( paste('All values are above criterion,',criterion,' so cannot calculate threshold') )
     end    
     value <- NULL;
+  #sort xfit, then put pfit in same order
+  xfit=sort(xfit,index.return=TRUE);
+  indices=xfit$ix
+  xfit=xfit$x
+  pfit=pfit[indices]
+  
 	# threshold
 	#xs for which difference between curve and threshold are minimized
     value$x_th <- xfit[ which( abs( pfit - criterion ) == min( abs( pfit - criterion ) ) ) ];

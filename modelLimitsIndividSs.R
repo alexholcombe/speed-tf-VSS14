@@ -24,8 +24,8 @@ tfLimitEachSubject<-tfLimitEachSubject[ , !names(tfLimitEachSubject) %in% colsTo
 #tfLimitEachSubject$lapseRate<-lapseRate
 ###################################################################################################
 #Create predicted psychometric curve for each condition I'm interested in, based on theoretical speed limit
-numSpeeds=50 #50
-speeds<-seq(0.1,4,length.out=numSpeeds)
+numSpeeds=150 #250
+speeds<-seq(0.04,4,length.out=numSpeeds)
 nTarg=c(1,2,3)
 conditns= expand.grid( targets=nTarg, numObjects=c(2,3),
                        speed=speeds,subject=unique(speedLimitEachSubject$subject) )
@@ -71,6 +71,7 @@ psychometricsHz$limit<-"tf"
 psychometricsSpeed$tf=psychometricsSpeed$speed*psychometricsSpeed$numObjects
 
 psychometrics= rbind(psychometricsSpeed,psychometricsHz)
+#psychometrics= subset(psychometricsSpeed, targets==1 & numObjects==2 & subject=="FHL") #slopeThisCrit -1.99, thresh=1.96 #debugOFF
 
 tit<-'Both_rps_and_Hz_limits'
 quartz(tit,width=4,height=4)
@@ -291,6 +292,8 @@ twoObjs2_3targets = subset(threshes_speed_123targets269objects,numObjects==2)# &
 
 #Check thresholds gotten originally for 1target2objs matches new limits found by
 #generating psychometric function from params, then extracting thresholds
+#I'm only re-extracting thresholds because I got new combined curves, but incidentally re-extract
+#From one that's already been extracted.
 newThresh2Objs1target = subset(threshes,targets==1 & numObjects==2 & limit=="speed")
 oldThresh2Objs1target = subset(twoObjs2_3targets, numTargets==1 & numObjects==2 )
 colsToCompare=c("numObjects","targets","subject","criterion","thresh","slopeThisCrit")
@@ -309,7 +312,8 @@ if (any( abs(cmp$thresh.x-cmp$thresh.y) >.03 ) | any( abs(cmp$slopeThisCrit.x-cm
                      as.character(round(mean(abs(cmp$slopeThisCrit.x-cmp$slopeThisCrit.y)),2)))
   stop(paste(msg,'\n',msgSlopeDiff))
 }
-                               
+####End check for discrepancies ###########################################
+
 twoObjs2_3targets$limit= "combined"
 #h+stat_summary(fun.y=mean,geom="point",dat=TwoObjs2_3targets,color="red")
 h=h+geom_point(dat=twoObjs2_3targets,aes(group=subject),color="red",position=position_dodge(width=0.6))

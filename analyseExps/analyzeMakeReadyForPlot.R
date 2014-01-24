@@ -11,9 +11,9 @@ if (varyLapseRate) { lapseMinMax= c(0,0.05) }  else  #range of lapseRates to try
 	{ lapseMinMax = c(0.01,0.01) }
 chanceRate=.5
 factorsForBreakdown = c('exp','numObjects','numTargets')
-xLims=c(.04,2.7);  if (iv=="tf") {xLims=c(.5,8)}
+xLims=c(.04,4);  if (iv=="tf") {xLims=c(.5,8)}
 yLims=c(.3,1.05)
-numPointsForPsychometricCurve=200 
+numPointsForPsychometricCurve=150 #250
 #end global variables expected
 verbosity=0 #0-don't print much debugging stuff, 1 prints more, and 2 even more
 
@@ -109,6 +109,19 @@ stopifnot(exists("fitParms"))
 stopifnot(exists("psychometrics"))
 stopifnot(exists("datMeans"))
 stopifnot(exists("calcPctCorrThisIvVal"))
+
+#psychometrics= subset(psychometrics, numTargets==1 & numObjects==2 & subject=="FHL") #slopeThisCrit -1.99, thresh=1.96 #debugOFF
+tit<-'DEBUG'
+quartz(tit,width=4,height=4)
+g=ggplot(data=psychometrics,
+         aes(x=speed,y=correct,shape=subject)) 
+g=g+geom_point()+theme_bw()
+g=g+geom_line()
+g=g+ylab('Proportion Correct')
+g=g+xlab('Speed (rps)') 
+g=g+ggtitle('overlap much greater for 3-object case')
+show(g)
+ggsave( paste('figs/',tit,'.png',sep='') )
 
 #  title<-paste('E',expNum,' individual Ss data',sep='')
 #   quartz(title,width=10,height=7)
