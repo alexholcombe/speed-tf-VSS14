@@ -18,10 +18,8 @@ tfLimitEachSubject = subset(threshes_tf_123targets269objects, numObjects==9)
 #eightDistractorsMean<-aggregate(eightDistractors, by=list(temp=eightDistractors$numObjects), meanIfNumber) #average whole thing
 
 speedLimitEachSubject<-speedLimitEachSubject[ , !names(speedLimitEachSubject) %in% colsToDelete] 
-#speedLimitEachSubject$lapseRate<-lapseRate
 
 tfLimitEachSubject<-tfLimitEachSubject[ , !names(tfLimitEachSubject) %in% colsToDelete] 
-#tfLimitEachSubject$lapseRate<-lapseRate
 ###################################################################################################
 #Create predicted psychometric curve for each condition I'm interested in, based on theoretical speed limit
 numSpeeds=150 #250
@@ -288,14 +286,14 @@ if (!showIndividData) {
 #
 #1-target 2 objs assumed to be true speed limit. Let's see if decrease with targets can be
 #explained by 2-target, 3-target tf limits
-twoObjs2_3targets = subset(threshes_speed_123targets269objects,numObjects==2)# & numTargets>1)
+twoObjs123targets = subset(threshes_speed_123targets269objects,numObjects==2)# & numTargets>1)
 
 #Check thresholds gotten originally for 1target2objs matches new limits found by
 #generating psychometric function from params, then extracting thresholds
 #I'm only re-extracting thresholds because I got new combined curves, but incidentally re-extract
 #From one that's already been extracted.
 newThresh2Objs1target = subset(threshes,targets==1 & numObjects==2 & limit=="speed")
-oldThresh2Objs1target = subset(twoObjs2_3targets, numTargets==1 & numObjects==2 )
+oldThresh2Objs1target = subset(twoObjs123targets, numTargets==1 & numObjects==2 )
 colsToCompare=c("numObjects","targets","subject","criterion","thresh","slopeThisCrit")
 oldThresh2Objs1target=oldThresh2Objs1target[,colsToCompare]
 newThresh2Objs1target=newThresh2Objs1target[,colsToCompare]
@@ -314,14 +312,28 @@ if (any( abs(cmp$thresh.x-cmp$thresh.y) >.03 ) | any( abs(cmp$slopeThisCrit.x-cm
 }
 ####End check for discrepancies ###########################################
 
-twoObjs2_3targets$limit= "combined"
+twoObjs123targets$limit= "combined"
 #h+stat_summary(fun.y=mean,geom="point",dat=TwoObjs2_3targets,color="red")
-h=h+geom_point(dat=twoObjs2_3targets,aes(group=subject),color="red",position=position_dodge(width=0.6))
+
+#Extend red line in 1-target case to speed side, because it's identical
+actual1target = subset(twoObjs123targets,targets==1)
+actual1targetDuplicate=actual1target
+actual1target$limit="speed"
+actual1target= rbind(actual1target,actual1targetDuplicate)
+h=h+geom_point(dat=subset(actual1target,limit=="combined"),aes(group=subject),color="red")
+h=h+geom_line(dat=actual1target,aes(group=subject),color="red") #draw a line to show it's meaningless in 1-target case
+
+twoObjs23targets=subset(twoObjs123targets,targets>1)
+h=h+geom_point(dat=twoObjs23targets,aes(group=subject),color="red",position=position_dodge(width=0.6))
 #h=h+stat_summary(dat=TwoObjs2_3targets,fun.data="mean_cl_boot",geom="errorbar",conf.int=.67,
 #               position=position_dodge(width=0.6),color="red",width=.2) 
 #+geom_line(data=2objs2_3targets,aes(group=subject),color="red")
 
-captn="Fit with lapse rate=",
+captn="Fit with lapse rate"
+if (length(unique(threshes_tf_123targets269objects$lapseRate))==1) {
+  captn=paste(captn,as.numeric(unique(threshes_tf_123targets269objects$lapseRate)[1]))
+} else captn=paste(captn,'variable.')
+captn=paste(captn,"Red points = actual threshs. Black combined are theoretical, based on tf limit decline with targets")
 h=h+ ggtitle(captn) +theme(plot.title=element_text(size=7))
 #theme(plot.title = element_text(lineheight=3, face="bold", color="black", size=29))
 show(h)
@@ -357,10 +369,46 @@ ggsave( paste('figs/',tit,'.png',sep='') )
 #h+geom_line(data=meanAcrossAdjst,aes(shape=subject),color="blue",lty=2,position=position_dodge(width=0.6))
 #h+geom_line(data=meanAcrossAdjst,aes(group=subject),color="blue",lty=2,position=position_dodge(width=0.6))
 #verdict: decrease is about what would predict. I guess I should present methodAdjstment as something to validate a traditnl CRT experiment
-#So model 1,2,3 targets and then come back to this?
 
 ############################################################################
+#PLOT PREDICTED TARGET DECLINE AND ACTUAL
+tit<-'PredictedEachTargetsEachSubject'
+predictdAndTfAndActual = subset(threshes_speed_123targets269objects,numObjects==2 | numObjects==6)# & numTargets>1)
+predictdAndTfAndActual$limit="actual"
+colsToKeep=c("numObjects","targets","subject","criterion","thresh","slopeThisCrit","error","limit")
+predictdAndTfAndActual=predictdAndTfAndActual[,colsToKeep]
+predictd=subset(threshes,limit=="combined")
+predictd$limit="predicted"
+predictdAndTfAndActual=rbind(predictdAndTfAndActual,predictd)
+tf=subset(threshes,limit=="tf")
+speed=subset(threshes,limit=="speed")
+predicted=rbind(predictdAndTfAndActual,tf,speed)
+
+#show individual Ss.  Too crowded
+quartz(tit,width=4.5,height=4)
+h=ggplot(predicted,aes(x=targets,y=thresh,color=limit,shape=subject))
+dodgeIt=position_dodge(width=0.4)
+h=h+geom_point(position=dodgeIt)
+h=h+geom_line(aes(group=interaction(subject,limit)),position=dodgeIt)
+h=h+theme_bw()+facet_grid(.~numObjects)
+h
+
+#average across Ss
+h=ggplot(predicted,aes(x=targets,y=thresh,color=limit))
+dodgeIt=position_dodge(width=0.3)
+h=h+stat_summary(fun.data="mean_cl_boot",fun.y="mean",geom="errorbar",conf.int=.67,position=dodgeIt)
+h=h+stat_summary(data=predicted,fun.y="mean",geom="line",aes(group=limit),position=dodgeIt)
+h=h+theme_bw()+facet_grid(.~numObjects)
+h=h+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
+h=h+scale_color_manual(values=c("black","red","blue","green")) #make combined black
+h
+captn="Actual is much worse than predicted, suggesting that speed limit declines with targets"
+h=h+ ggtitle(captn) +theme(plot.title=element_text(size=7))
+h
+#REALLY SHOULD TRY THIS FOR A FEW DIFFERENT THRESHOLD CRITERIA
+#ALSO CHECK THAT THE 6-OBJECT CASE IS CORRECTLY PREDICTED. PRESUMABLY YES
+
 #Plot amount decrement expected vs. amount found
 #Eventually, might have non-method-adjustment numbers for 2 vs. 3 objects too
 
-
+#Check out the slope of combined predicted versus ACTUAL!! :)
