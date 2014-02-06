@@ -16,16 +16,19 @@ load("data/threshes_tf_123targets269objects.Rdata",verbose=TRUE)
 tfLimitEachSubject = subset(threshes_tf_123targets269objects, numObjects==9)
 #oneDistractorMean<-aggregate(oneDistractor, by=list(temp=oneDistractor$numObjects), meanIfNumber) #average whole thing
 #eightDistractorsMean<-aggregate(eightDistractors, by=list(temp=eightDistractors$numObjects), meanIfNumber) #average whole thing
+actualLimitEachSubject = threshes_tf_123targets269objects
 
 speedLimitEachSubject<-speedLimitEachSubject[ , !names(speedLimitEachSubject) %in% colsToDelete] 
-
 tfLimitEachSubject<-tfLimitEachSubject[ , !names(tfLimitEachSubject) %in% colsToDelete] 
+actualLimitEachSubject<-actualLimitEachSubject[ , !names(actualLimitEachSubject) %in% colsToDelete] 
 ###################################################################################################
-#Create predicted psychometric curve for each condition I'm interested in, based on theoretical speed limit
+#Create predicted psychometric curve for each condition I'm interested in, based on 
+#theoretical speed limit. 
 numSpeeds=150 #250
 speeds<-seq(0.04,4,length.out=numSpeeds)
 nTarg=c(1,2,3)
-conditns= expand.grid( targets=nTarg, numObjects=c(2,3),
+threshCriteria<-c(0.75,  (1.00 + 1/6) / 2.0 )
+conditns= expand.grid( targets=nTarg, numObjects=c(2,3,6),
                        speed=speeds,subject=unique(speedLimitEachSubject$subject) )
 
 psychometricsSpeed= speedLimitEachSubject
@@ -85,7 +88,7 @@ show(g)
 ggsave( paste('figs/',tit,'.png',sep='') )
 
 #################################################################################
-#Multiply it with each other, then extract resulting threshes
+#Multiply limiting psychometric functions together, then extract resulting threshes
 pAfterBothLimits<- function(p1,p2,numObjects,lapse1,lapse2) {
   #Take guesses out (assumption: high-threshold model) of each p
   #to yield t, the "true function"- probability of successful tracking.
@@ -158,11 +161,6 @@ afterBothLims<-function(df) {
 }
 factors<-c("numObjects","targets","speed","subject")
 
-#psAfterBoth= ddply(psychometrics,factors,function(df){dg<<-df; STOP})
-
-# ddply(psychometrics,factors,function(df){
-#                print(nrow(subset(df,limit=="speed")))})
-
 psAfterBoth= ddply(psychometrics,factors,afterBothLims)
 psAfterBoth$limit= "combined"
 
@@ -194,26 +192,32 @@ show(g)
 
 #Extract threshes from model curves. 
 threshes <- data.frame()
-threshCriteria<-c(0.75)
+factorsPlusLimitType<-c(factors,"limit")
+factorsPlusLimitType= factorsPlusLimitType[ factorsPlusLimitType!="speed" ] #delete speed
+
 for (threshCriterion in threshCriteria) {  
-  psychometricTemp<-psychometricsLims
-  factorsPlusLimitType<-c(factors,"limit")
-  factorsPlusLimitType= factorsPlusLimitType[ factorsPlusLimitType!="speed" ] #delete speed
-  
+
   #use point by point search to find the threshold. 
   myThreshGetNumeric= makeMyThreshGetNumerically("speed",threshCriterion)
   
-  threshesThisNumeric = ddply(psychometricTemp,factorsPlusLimitType,myThreshGetNumeric) 
+  threshesThisNumeric = ddply(psychometricsLims,factorsPlusLimitType,myThreshGetNumeric) 
   threshesThisNumeric$criterion <- threshCriterion
   #threshesThis<- merge(threshesThisNumeric,fitParms)
   threshesThis<-threshesThisNumeric
   threshes<- rbind(threshes, threshesThis)
 }
-failedConds=threshes[is.na(threshes$thresh),1:2]
+failedConds=threshes[is.na(threshes$thresh),c(3,4,1,2,8)]
 if (nrow(failedConds)>0) {
-  cat('Failed to find thresh from psychometric for conditions:')
+  cat('Failed to find thresh from psychometric for following conditions. Often this happens')
+  cat(' due to performance not falling low enough in speed range included.\n')
   print(failedConds)
 }
+#reorder factor levels
+threshes$limit = factor(threshes$limit,unique(threshes$limit)[c(2,3,1)]) #speed,tf,combined
+
+#For psychometrics gotten from extractThreshes, may only have .555 criterion for tf
+table(psychometricsLims$targets,psychometricsLims$criterion,psychometricsLims$limit)
+table(threshes$targets,threshes$criterion,threshes$limit)
 
 toMakeLine= subset(threshes,!is.na(thresh)) #omit where couldn't extract thresh
 threshLines= ddply(toMakeLine,factorsPlusLimitType,threshLine)
@@ -228,11 +232,6 @@ g<-g+geom_line(data=threshLines,lty=3)
 g=g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
 show(g)
 ggsave( paste('figs/',tit,'.png',sep='') )
-
-
-#THEN PRETTIFY FOR CONCEPTUAL FIGURE FOR PAPER
-#reorder factor levels
-threshes$limit = factor(threshes$limit,unique(threshes$limit)[c(2,3,1)]) #speed,tf,combined
 
 #I need a plot of the thresholds too, not the psychometric functions
 quartz(tit,width=3.2,height=3.5)
@@ -249,57 +248,20 @@ g=g+scale_color_manual(values=c("blue","red","black")) #make combined black
 g=g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
 show(g)
 
-showIndividData=TRUE
-if (!showIndividData) {
-  tit<-'threshesTheory'
-  quartz(tit,width=4.5,height=4)
-  h=ggplot(threshes,aes(x=limit,y=thresh,shape=subject))
-  h=h+theme_bw()+ facet_grid(targets~numObjects)
-  dodge=position_dodge(width=0.2)
-  h=h+stat_summary(fun.data="mean_cl_boot",aes(group=targets),geom="errorbar",conf.int=.67,width=.2)
-  h=h+stat_summary(fun.y=mean,geom="point",aes(group=targets),size=2.5)
-  h=h+stat_summary(fun.y=mean,aes(group=targets),geom="line")
-  show(h)
-} else {
-  tit<-'threshesTheoryEachSubject'
-  quartz(tit,width=8,height=7)  #(tit,width=4,height=3.5)
-  h=ggplot(threshes,aes(x=limit,y=thresh,shape=subject))
-  h=h+theme_bw()+ facet_grid(targets~numObjects)
-  dodgeAmt=0.2
-  h=h+geom_point(size=2.5,position=position_dodge(width=dodgeAmt))
-  h=h+geom_line(aes(group=subject),position=position_dodge(dodgeAmt))
-  show(h)
-}
-###############################################################################
-#Now plot cost of going from 1 distractor to 2
-
-#Is 2-target observed threshold (3.9 Hz) predicted by combo of 4.4 Hz and 1-target speed limit?
-
-#For doing stats, need to do it for each subject's psychometric function in each condition,
-#unless that's overkill because have some unstable Ss. But ideally would show that Ss with
-#particularly low t.f. limit also have low speed - 3 distractors limit
-
-#For 2 targets and 3 targets, which limits, speed or temporal frequency?
-#Can decrease in speed limit be accounted for entirely by t.f. decrease even with 1 distractor?
-###############################################################################
-#Now plot empirical thresholds on the model plot
-#
-#1-target 2 objs assumed to be true speed limit. Let's see if decrease with targets can be
-#explained by 2-target, 3-target tf limits
-twoObjs123targets = subset(threshes_speed_123targets269objects,numObjects==2)# & numTargets>1)
-
+#Check for discrepancies ######################################################## 
 #Check thresholds gotten originally for 1target2objs matches new limits found by
-#generating psychometric function from params, then extracting thresholds
+#generating psychometric function from params then extracting thresholds
 #I'm only re-extracting thresholds because I got new combined curves, but incidentally re-extract
 #From one that's already been extracted.
+twoObjs123targets = subset(threshes_speed_123targets269objects,numObjects==2)# & numTargets>1)
 newThresh2Objs1target = subset(threshes,targets==1 & numObjects==2 & limit=="speed")
 oldThresh2Objs1target = subset(twoObjs123targets, numTargets==1 & numObjects==2 )
 colsToCompare=c("numObjects","targets","subject","criterion","thresh","slopeThisCrit")
 oldThresh2Objs1target=oldThresh2Objs1target[,colsToCompare]
 newThresh2Objs1target=newThresh2Objs1target[,colsToCompare]
-if (any(newThresh2Objs1target$criterion != oldThresh2Objs1target$criterion)) {
+if (any(oldThresh2Objs1target$criterion != newThresh2Objs1target$criterion)) {
   warning("You used a different criterion to extract predicted thresholds")
-  stop("You used a different criterion to extract predicted thresholds")
+  #cat("old=")
 }
 colsToMerge=c("numObjects","targets","subject","criterion")
 cmp= merge(oldThresh2Objs1target,newThresh2Objs1target,by=colsToMerge)
@@ -312,24 +274,69 @@ if (any( abs(cmp$thresh.x-cmp$thresh.y) >.03 ) | any( abs(cmp$slopeThisCrit.x-cm
 }
 ####End check for discrepancies ###########################################
 
-twoObjs123targets$limit= "combined"
+thisCrit=threshCriteria[2]
+thrThisCrit=subset(threshes,criterion==thisCrit)
+showIndividData=TRUE
+if (!showIndividData) {
+  tit<-'threshesTheory'
+  quartz(tit,width=4.5,height=4)
+  h=ggplot(thrThisCrit,aes(x=limit,y=thresh,shape=subject))
+  h=h+theme_bw()+ facet_grid(targets~numObjects)
+  dodge=position_dodge(width=0.2)
+  h=h+stat_summary(fun.data="mean_cl_boot",aes(group=targets),geom="errorbar",conf.int=.67,width=.2)
+  h=h+stat_summary(fun.y=mean,geom="point",aes(group=targets),size=2.5)
+  h=h+stat_summary(fun.y=mean,aes(group=targets),geom="line")
+  show(h)
+} else {
+  tit<-'threshesTheoryEachSubject'
+  quartz(tit,width=8,height=7)  #(tit,width=4,height=3.5)
+  h=ggplot(thrThisCrit,aes(x=limit,y=thresh,shape=subject))
+  h=h+theme_bw()+ facet_grid(targets~numObjects)
+  dodgeAmt=0.2
+  h=h+geom_point(size=2.5,position=position_dodge(width=dodgeAmt))
+  h=h+geom_line(aes(group=subject),position=position_dodge(dodgeAmt))
+  show(h)
+}
+###############################################################################
+#Now plot cost of going from 1 distractor to 2
+
+#Is 2-target observed threshold (3.9 Hz) predicted by combo of 4.4 Hz and 1-target speed limit?
+
+#ideally would show that Ss with particularly low t.f. limit also have low speed - 3 distractors limit
+#For 2 targets and 3 targets, which limits, speed or temporal frequency?
+#Can decrease in speed limit be accounted for entirely by t.f. decrease even with 1 distractor?
+###############################################################################
+#Now plot empirical thresholds on the model plot
+#
+#1-target 2 objs assumed to be true speed limit. Let's see if decrease with targets can be
+#explained by 2-target, 3-target tf limits
 #h+stat_summary(fun.y=mean,geom="point",dat=TwoObjs2_3targets,color="red")
 
 #Extend red line in 1-target case to speed side, because it's identical
-actual1target = subset(twoObjs123targets,targets==1)
-actual1targetDuplicate=actual1target
-actual1target$limit="speed"
-actual1target= rbind(actual1target,actual1targetDuplicate)
+actual1target2objs = subset(thrThisCrit,targets==1 & limit=="speed" & numObjects==2)
+actual1target2objsDuplicate=actual1target2objs
+actual1target2objsDuplicate$limit="combined"
+actual1target= rbind(actual1target2objs,actual1target2objsDuplicate)
+#Now have both speed and combined, same data, to show they are the same, in red
+actual1target=subset(actual1target,criterion==thisCrit)
 h=h+geom_point(dat=subset(actual1target,limit=="combined"),aes(group=subject),color="red")
 h=h+geom_line(dat=actual1target,aes(group=subject),color="red") #draw a line to show it's meaningless in 1-target case
+h
+actual23targets= subset(thrThisCrit,targets>1 & limit=="speed")
+#NO NO NO, THESE ARE NOT THE ACTUAL- THESE ARE ASSUMING 1 TARGET IS SAME AS 2,3 TARGETS!
+actual23targets$limit= "combined" #use combined label for actual just to plot it there
+actual23targets=subset(actual23targets,criterion==thisCrit)
 
-twoObjs23targets=subset(twoObjs123targets,targets>1)
-h=h+geom_point(dat=twoObjs23targets,aes(group=subject),color="red",position=position_dodge(width=0.6))
+#For 2,3 targets are they in THRESHES? DON'T THINK SO, THEREFORE IF I WANT
+#ANOTHER CRITERION FOR ACTUAL, I NEED EXTRACTTHRESHES TO GET IT FOR ME AND PUT INTO
+#SAVED DAT
+h=h+geom_point(dat=actual23targets,aes(group=subject),color="red",position=position_dodge(width=0.6))
 #h=h+stat_summary(dat=TwoObjs2_3targets,fun.data="mean_cl_boot",geom="errorbar",conf.int=.67,
 #               position=position_dodge(width=0.6),color="red",width=.2) 
 #+geom_line(data=2objs2_3targets,aes(group=subject),color="red")
 
-captn="Fit with lapse rate"
+captn=paste("Criterion=",as.character(round(thisCrit,3)))
+captn=paste(captn,"Fit with lapse rate")
 if (length(unique(threshes_tf_123targets269objects$lapseRate))==1) {
   captn=paste(captn,as.numeric(unique(threshes_tf_123targets269objects$lapseRate)[1]))
 } else captn=paste(captn,'variable.')
@@ -394,15 +401,17 @@ h=h+theme_bw()+facet_grid(.~numObjects)
 h
 
 #average across Ss
+quartz(tit,width=4.5,height=4)
 h=ggplot(predicted,aes(x=targets,y=thresh,color=limit))
 dodgeIt=position_dodge(width=0.3)
 h=h+stat_summary(fun.data="mean_cl_boot",fun.y="mean",geom="errorbar",conf.int=.67,position=dodgeIt)
 h=h+stat_summary(data=predicted,fun.y="mean",geom="line",aes(group=limit),position=dodgeIt)
-h=h+theme_bw()+facet_grid(.~numObjects)
+h=h+theme_bw()+facet_grid(criterion~numObjects)
 h=h+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
 h=h+scale_color_manual(values=c("black","red","blue","green")) #make combined black
 h
-captn="Actual is much worse than predicted, suggesting that speed limit declines with targets"
+captn="Actual is much worse than predicted, suggesting that speed limit declines with targets."
+captn=paste(captn,"But performance is better than expected for numObjects=6, suggesting crowding?")
 h=h+ ggtitle(captn) +theme(plot.title=element_text(size=7))
 h
 #REALLY SHOULD TRY THIS FOR A FEW DIFFERENT THRESHOLD CRITERIA
