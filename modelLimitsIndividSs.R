@@ -284,13 +284,12 @@ showIndividData=TRUE
 if (!showIndividData) {
   tit<-'threshesTheory'
   quartz(tit,width=4.5,height=4)
-  h=ggplot(thrThisCrit,aes(x=limit,y=thresh,color=type,shape=subject))
+  h=ggplot(thrThisCrit,aes(x=limit,y=thresh,color=type,shape=subject))  
   h=h+theme_bw()+ facet_grid(targets~numObjects)
   dodge=position_dodge(width=0.2)
   h=h+stat_summary(fun.data="mean_cl_boot",aes(group=targets),geom="errorbar",conf.int=.67,width=.2)
   h=h+stat_summary(fun.y=mean,geom="point",aes(group=targets),size=2.5)
   h=h+stat_summary(fun.y=mean,aes(group=targets),geom="line")
-  show(h)
 } else {
   tit<-'threshesTheoryEachSubject'
   quartz(tit,width=8,height=7)  #(tit,width=4,height=3.5)
@@ -299,8 +298,11 @@ if (!showIndividData) {
   dodgeAmt=0.2
   h=h+geom_point(size=2.5,position=position_dodge(width=dodgeAmt))
   h=h+geom_line(aes(group=subject),position=position_dodge(dodgeAmt))
-  show(h)
 }
+h=h+scale_color_manual(values=c("red","black")) #make theory black
+h=h+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
+show(h)
+
 ###############################################################################
 #Now plot cost of going from 1 distractor to 2
 
@@ -327,18 +329,16 @@ actual1target= rbind(actual1target2objs,actual1target2objsDuplicate)
 #Now have both speed and combined, same data, to show they are the same, in red
 actual1target=subset(actual1target,criterion==thisCrit)
 h=h+geom_point(dat=subset(actual1target,limit=="combined"),aes(group=subject),color="red")
-h=h+geom_line(dat=actual1target,aes(group=subject),color="purple") #draw a line to show it's meaningless in 1-target case
+h=h+geom_line(dat=actual1target,aes(group=subject),color="red",lty=2) #draw a line to show it's meaningless in 1-target case
 h
 #OK so I need to have dataframe each subject's limits thisCrit, possibly with type==observed
 if (!(thisCrit %in% unique(threshes_speed_123targets269objects$criterion)))
   stop(paste("The criterion you are plotting",thisCrit,"was not provided by the fitting script"))
 actualEachSubject = subset(threshes_speed_123targets269objects,criterion==thisCrit)
+actualEachSubject = subset(actualEachSubject,(numObjects>2 | targets>1)) #handled this special case separately, above
 actualEachSubject$limit ="combined" #use combined label for actual data just so it plots there
 
-h=h+geom_point(dat=actualEachSubject,aes(group=subject),color="purple",position=position_dodge(width=0.6))
-#h=h+stat_summary(dat=TwoObjs2_3targets,fun.data="mean_cl_boot",geom="errorbar",conf.int=.67,
-#               position=position_dodge(width=0.6),color="red",width=.2) 
-#+geom_line(data=2objs2_3targets,aes(group=subject),color="red")
+h=h+geom_point(dat=actualEachSubject,aes(group=subject),color="red",position=position_dodge(width=0.6))
 
 captn=paste("Criterion=",as.character(round(thisCrit,3)))
 captn=paste(captn,"Fit with lapse rate")
@@ -353,7 +353,7 @@ tit<-paste(tit,'withActualResult',sep='')
 ggsave( paste('figs/',tit,'.png',sep='') )
 dev.set(dev.prev()) #because ggsave changes which window active, but I want to modify more
 
-#######add 2->3 objects actual finding
+#######add 2->3 objects actual finding (from method of adjustment)
 #Dammit only method of adjustment used both 2 and 3 objects. So, not comparable. But,
 load("data/E2_CRT_spinzter.Rdata",verbose=TRUE)
 #can plot its thresholds for 2 vs. 3 objects to see if decrement comparable
@@ -366,23 +366,24 @@ methodAdjst23objs$limit = "heck"
 methodAdjst23objs[ methodAdjst23objs$numObjects==2, ]$limit="speed"
 methodAdjst23objs[ methodAdjst23objs$numObjects==3, ]$limit="combined"
 
-#aggregate across ecc, device, direction, trackRing?
+#aggregate across ecc, device, direction, trackRing
 meanAcrossAdjst<-aggregate(methodAdjst23objs, by=list(
     tmp=methodAdjst23objs$limit,tmp2=methodAdjst23objs$subject,tmp3=methodAdjst23objs$numObjects), meanIfNumber) #average whole thing
 
 meanAcrossAdjst[meanAcrossAdjst$numObjects==2,]$numObjects=3 #this isn't really right because doesn't adjust for chance, but shoehorns onto modeling graph 
 #Can't label subject with shape because too many additional subjects
 #Not worth it anyway for incomparable method of adjustment
-h=h+geom_point(dat=meanAcrossAdjst,shape=1,color="blue",position=position_dodge(width=0.6))
+h=h+geom_point(dat=meanAcrossAdjst,shape=1,color="purple",position=position_dodge(width=0.6))
 show(h)
 tit<-paste(tit,'withMethodAdjstment',sep='')
 ggsave( paste('figs/',tit,'.png',sep='') )
 
-#h+geom_line(data=meanAcrossAdjst,aes(shape=subject),color="blue",lty=2,position=position_dodge(width=0.6))
-#h+geom_line(data=meanAcrossAdjst,aes(group=subject),color="blue",lty=2,position=position_dodge(width=0.6))
+#
+LET'S ADD IN 9 OBJECTS PREDICTED SPEED LIMIT AND TF LIMIT??
+
 #verdict: decrease is about what would predict. I guess I should present methodAdjstment as something to validate a traditnl CRT experiment
 
-############################################################################
+###############################################################################################
 #PLOT PREDICTED TARGET DECLINE AND ACTUAL
 tit<-'PredictedEachTargetsEachSubject'
 predictdAndTfAndActual = subset(threshes_speed_123targets269objects,numObjects==2 | numObjects==6)# & numTargets>1)
