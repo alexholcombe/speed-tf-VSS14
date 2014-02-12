@@ -155,8 +155,8 @@ afterBothLims<-function(df) {
   speedParms= subset(df,limit=="speed")
   tfParms= subset(df,limit=="tf")
   stopifnot(nrow(speedParms)>0, nrow(tfParms)>0)
-  
-  if ((speedParms$numObjects != tfParms$numObjects)) {
+  stopifnot(length(unique(speedParms$numObjects))==1, length(unique(tfParms$numObjects))==1)
+  if ((speedParms$numObjects[1] != tfParms$numObjects[1])) {
     stop("afterBothLims: Corresponding params not same conditions") }
   pBasedOnSpeedLimit = psychoCorrSpeed(speedParms)
   pBasedOnTFlimit = psychoCorrTf(tfParms)
@@ -168,14 +168,12 @@ afterBothLims<-function(df) {
   speedParms$correct = pAfterBoth
   return(speedParms)
 }
-factors<-c("numObjects","targets","speed","subject")
-
+factors<-c("numObjects","targets","speed","subject","criterion")
 psAfterBoth= ddply(psychometrics,factors,afterBothLims)
 psAfterBoth$limit= "combined"
 
-#Try to merge psAfterBoth into psychometrics so will automatically plot all.
+#Add psAfterBoth onto psychometrics so will automatically plot all.
 psychometricsLims= rbind(psychometrics,psAfterBoth)
-#psychometricsLims= subset(psAfterBoth,numObjects==3)
 
 tit<-'rps_and_Hz_limits_combined'
 quartz(tit,width=5,height=3.5)
@@ -192,9 +190,6 @@ g<-g+ scale_y_continuous(breaks=c(0,0.5,1))
 g=g+scale_color_manual(values=c("black","blue","red")) #make combined black
 #g=g+scale_linetype_manual(size=c(10,1,1))
 show(g)
-#Eventually, need to take each subject's data and get their personal predicted curve?
-#All I need is the HzParms and rpsParms with a new psychoCorrThisSpeed
-#Then go through all speeds and calculate combined fit. Then plot the threshold
 
 #But if the parameters of the fit came from tf as the variable, need to make sure I'm
 #putting that in right when
@@ -227,10 +222,6 @@ if (nrow(failedConds)>0) {
 #reorder factor levels
 threshes$limit = factor(threshes$limit,unique(threshes$limit)[c(2,3,1)]) #speed,tf,combined
 
-#For psychometrics gotten from extractThreshes, may only have .555 criterion for tf
-table(psychometricsLims$targets,psychometricsLims$criterion,psychometricsLims$limit)
-table(threshes$targets,threshes$criterion,threshes$limit)
-
 toMakeLine= subset(threshes,!is.na(thresh)) #omit where couldn't extract thresh
 threshLines= ddply(toMakeLine,factorsPlusLimit,threshLine)
 #threshLines=subset(threshLines,!is.na(speed)) #tf 2 objects 2 rings cut off
@@ -245,11 +236,11 @@ g=g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hi
 show(g)
 ggsave( paste('figs/',tit,'.png',sep='') )
 
-#I need a plot of the thresholds too, not the psychometric functions
-quartz(tit,width=3.2,height=3.5)
+#I need a plot of the thresholds (above was the psychometric functions)
+quartz(tit,width=6.4,height=3.5)
 g=ggplot(threshes, aes(
      x=factor(numObjects),y=thresh,color=limit,alpha=limit,shape=subject))
-g=g+theme_bw()+ facet_grid(targets~.)
+g=g+theme_bw()+ facet_grid(targets~criterion)
 dodgeAmt=0.2
 g=g+geom_point(size=2.5,position=position_dodge(width=dodgeAmt))
 combindOnly=subset(threshes,limit=="combined")
@@ -271,6 +262,8 @@ oldThresh2Objs1target = subset(twoObjs123targets, numTargets==1 & numObjects==2 
 colsToCompare=c("numObjects","targets","subject","criterion","thresh","slopeThisCrit")
 oldThresh2Objs1target=oldThresh2Objs1target[,colsToCompare]
 newThresh2Objs1target=newThresh2Objs1target[,colsToCompare]
+#setdiff(old,new) check whether any in new are not in old
+
 if (any(oldThresh2Objs1target$criterion != newThresh2Objs1target$criterion)) {
   warning("You used a different criterion to extract predicted thresholds")
   #cat("old=")
