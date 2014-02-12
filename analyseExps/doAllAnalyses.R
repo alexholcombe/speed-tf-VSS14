@@ -12,18 +12,17 @@ load("data/data123targets269objects.RData",verbose=TRUE) #E1
 dat$tf = dat$speed*dat$numObjects
 for (iv in c("speed","tf")) {
   source('analyseExps/analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
-  #save.image(file="speedLimitsAndTargetLoad.RData") #esp. because might want to analyse this data later as testbed for more robust function fitting
   
   #should also do it normalizing by subjects' speed limits
   source("analyseExps/extractThreshesAndPlot.R") #provides threshes, plots
-  
-  varName=paste("threshes_",iv,"_",expName,sep='')
+
+  varName=paste("threshes_",iv,"_",expName,sep='') #combine threshes
   assign(varName,threshes)
   save(list=varName,file=paste("data/",varName,".Rdata",sep='')) #e.g. threshes_tf_123targets269objects.Rdata
-}
 
-if (iv=="speed") { #if not, don't bother
-  source('analyseExps/plotIndividDataWithPsychometricCurves.R') 
+  if (iv=="speed") { #if not, don't bother
+    source('analyseExps/plotIndividDataWithPsychometricCurves.R') 
+  }
 }
 
 #source ( model limits) ??

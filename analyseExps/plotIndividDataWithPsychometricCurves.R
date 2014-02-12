@@ -1,8 +1,8 @@
 #Variables expected
 #dat
 #iv - "tf" or "speed"
-if !(exists("psychometrics$speed")) { #psychometrics must have been fit to tf
-  stopifnot(exists("psychometrics$tf")) #confirm my interpretation
+if (!("speed" %in% colnames(psychometrics))) { #psychometrics must have been fit to tf
+  stopifnot("tf" %in% colnames(psychometrics)) #confirm my interpretation that tf was fit
   psychometrics$speed = psychometrics$tf / psychometrics$numObjects #because always plot them in terms of speed
 }
 

@@ -60,6 +60,12 @@ myPlotCurve <- makeMyPlotCurve4(iv,xLims[1],xLims[2]+.5,numPointsForPsychometric
 
 psychometrics<-ddply(fitParms,factorsPlusSubject,myPlotCurve)  
 
+
+#Below are just helper functions. Consider migration into a helper function file
+
+
+
+
 #Usually ggplot with stat_summary will collapse the data into means, but for some plots and analyses can't do it that way.
 #Therefore calculate the means
 calcMeans<-function(df) {
@@ -111,33 +117,16 @@ stopifnot(exists("datMeans"))
 stopifnot(exists("calcPctCorrThisIvVal"))
 
 #psychometrics= subset(psychometrics, numTargets==1 & numObjects==2 & subject=="FHL") #slopeThisCrit -1.99, thresh=1.96 #debugOFF
-tit<-'DEBUG'
-quartz(tit,width=4,height=4)
-g=ggplot(data=psychometrics,
-         aes(x=speed,y=correct,shape=subject)) 
-g=g+geom_point()+theme_bw()
-g=g+geom_line()
-g=g+ylab('Proportion Correct')
-g=g+xlab('Speed (rps)') 
-g=g+ggtitle('overlap much greater for 3-object case')
-show(g)
-ggsave( paste('figs/',tit,'.png',sep='') )
+# tit<-'DEBUG'
+# quartz(tit,width=4,height=4)
+# g=ggplot(data=psychometrics,
+#          aes(x=speed,y=correct,shape=subject)) 
+# g=g+geom_point()+theme_bw()
+# g=g+geom_line()
+# g=g+ylab('Proportion Correct')
+# g=g+xlab('Speed (rps)') 
+# g=g+ggtitle('overlap much greater for 3-object case')
+# show(g)
+# ggsave( paste('figs/',tit,'.png',sep='') )
 
-#  title<-paste('E',expNum,' individual Ss data',sep='')
-#   quartz(title,width=10,height=7)
-#   thisExpDat <- subset(dat,exp==expNum)
-#   g=ggplot(data= thisExpDat,aes(x=speed,y=correct,color=factor(numTargets),shape=factor(numObjects)))
-#   g=g+stat_summary(fun.y=mean,geom="point", position=position_jitter(w=0.04,h=0),alpha=.95)
-#   g=g+facet_grid(numObjects ~ subject)+theme_bw()
-#   #g<-g+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
-#   show(g)
-#   #draw individual psychometric functions, for only one experiment
-#   thisPsychometrics <- subset(psychometrics,exp==expNum)
-#   g=g+geom_line(data=thisPsychometrics)
-#   g=g+ geom_hline(mapping=aes(yintercept=chanceRate),lty=2)  #draw horizontal line for chance performance
-#   g=g+xlab('Speed (rps)')+ylab('Proportion Correct')
-#   #g=g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
-#   #g<- g+ theme(axis.title.y=element_text(size=12,angle=90),axis.text.y=element_text(size=10),axis.title.x=element_text(size=12),axis.text.x=element_text(size=10))
-#   g<-g+ scale_x_continuous(breaks=c(0.5,1.0,1.5,2.0,2.5),labels=c("0.5","","1.5","","2.5"))
-#   #g<-g+ scale_x_continuous(breaks=speeds)
-#   show(g)
+#Plotting of data and psychometric functions now in different file- plotIndividDataWithPsychometricCurves

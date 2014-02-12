@@ -25,7 +25,8 @@ actualLimitEachSubject<-actualLimitEachSubject[ , !names(actualLimitEachSubject)
 #Create predicted psychometric curve for each condition I'm interested in, based on 
 #theoretical speed limit. 
 numSpeeds=150 #250
-speeds<-seq(0.04,4,length.out=numSpeeds)
+maxSpeed = 5 #4 depends on subjects and criteiron, how far have to go to fall to threshold
+speeds<-seq(0.04,maxSpeed,length.out=numSpeeds)
 nTarg=c(1,2,3)
 threshCriteria<-c(0.75,  (1.00 + 1/6) / 2.0 )
 conditns= expand.grid( targets=nTarg, numObjects=c(2,3,6),
@@ -42,10 +43,13 @@ psychometricsSpeed$numTargets=NULL #will use conditns' targets
 
 psychometricsSpeed = merge(psychometricsSpeed,conditns)
 psychometricsSpeed$chanceRate = 1/psychometricsSpeed$numObjects
+#Have a column with "observed" or "theory" values so I don't get confused about what's what
+psychometricsSpeed$type="theory"
+psychometricsSpeed[psychometricsSpeed$targets==1 & psychometricsSpeed$numObjects==2,]$type="observed"
 
-#Create predicted psychometric curve for each condition I'm interested in, based on theoretical tf limits
-psychometricsHz= tfLimitEachSubject
-#includes separate limit for each target number
+#Create predicted psychometric curve for each condition I'm interested in, based on theoretical tf limit
+#experimentally observed for each number of targets
+psychometricsHz= tfLimitEachSubject #includes separate limit for each target number
 row.names(psychometricsHz)=NULL
 psychometricsHz$numObjects=NULL #will be replaced by conditns
 psychometricsHz$targets = psychometricsHz$numTargets
@@ -53,8 +57,13 @@ psychometricsHz$numTargets=NULL #will use conditns' targets
 #psychometricsHz= cbind(psychometricsHz,conditnsEachSubject)
 psychometricsHz= merge(psychometricsHz,conditns)
 psychometricsHz$chanceRate = 1/psychometricsHz$numObjects
+psychometricsHz$type="theory"
+if (any(unique(psychometricsHz$numObjects) %in% unique(tfLimitEachSubject$numObjects))) {
+  psychometricsHz[psychometricsHz$numObjects %in% unique(tfLimitEachSubject$numObjects),]$type="observed"
+}
+
 ##########################calculate predicted %correct
-psychoCorr<- makeMyPsychoCorr2("speed")
+psychoCorr<- makeMyPsychoCorr2("speed") #make function calculating %correct for a psychometric fx
 psychometricsSpeed$myKey= 1:nrow(psychometricsSpeed)
 psychometricsSpeed$correct= daply(psychometricsSpeed,.(myKey),psychoCorr)
 psychometricsSpeed$myKey=NULL
@@ -192,19 +201,22 @@ show(g)
 
 #Extract threshes from model curves. 
 threshes <- data.frame()
-factorsPlusLimitType<-c(factors,"limit")
-factorsPlusLimitType= factorsPlusLimitType[ factorsPlusLimitType!="speed" ] #delete speed
-
+factorsPlusLimit<-c(factors,"limit")
+factorsPlusLimit= factorsPlusLimit[ factorsPlusLimit!="speed" ] #delete speed
 for (threshCriterion in threshCriteria) {  
-
   #use point by point search to find the threshold. 
   myThreshGetNumeric= makeMyThreshGetNumerically("speed",threshCriterion)
-  
-  threshesThisNumeric = ddply(psychometricsLims,factorsPlusLimitType,myThreshGetNumeric) 
+  getThreshAndPreserveType <- function(df) {  #otherwise type gets thrown away, want to keep it for plotting color
+    ansDf = myThreshGetNumeric(df)
+    type= df$type[1]
+    stopifnot(length(unique(df$type))==1)    
+    ansDf$type = type
+    ansDf
+  }
+  threshesThisNumeric = ddply(psychometricsLims,factorsPlusLimit,getThreshAndPreserveType) 
+#  threshesThisNumeric = ddply(psychometricsLims,factorsPlusLimit,myThreshGetNumeric) 
   threshesThisNumeric$criterion <- threshCriterion
-  #threshesThis<- merge(threshesThisNumeric,fitParms)
-  threshesThis<-threshesThisNumeric
-  threshes<- rbind(threshes, threshesThis)
+  threshes<- rbind(threshes, threshesThisNumeric)
 }
 failedConds=threshes[is.na(threshes$thresh),c(3,4,1,2,8)]
 if (nrow(failedConds)>0) {
@@ -220,7 +232,7 @@ table(psychometricsLims$targets,psychometricsLims$criterion,psychometricsLims$li
 table(threshes$targets,threshes$criterion,threshes$limit)
 
 toMakeLine= subset(threshes,!is.na(thresh)) #omit where couldn't extract thresh
-threshLines= ddply(toMakeLine,factorsPlusLimitType,threshLine)
+threshLines= ddply(toMakeLine,factorsPlusLimit,threshLine)
 #threshLines=subset(threshLines,!is.na(speed)) #tf 2 objects 2 rings cut off
 minY=min(threshLines$correct) #replace minimum value with higher
 threshLines$correct[(threshLines$correct==minY)] = 0.3 #because don't want to show axis all way to 0
@@ -280,7 +292,7 @@ showIndividData=TRUE
 if (!showIndividData) {
   tit<-'threshesTheory'
   quartz(tit,width=4.5,height=4)
-  h=ggplot(thrThisCrit,aes(x=limit,y=thresh,shape=subject))
+  h=ggplot(thrThisCrit,aes(x=limit,y=thresh,color=type,shape=subject))
   h=h+theme_bw()+ facet_grid(targets~numObjects)
   dodge=position_dodge(width=0.2)
   h=h+stat_summary(fun.data="mean_cl_boot",aes(group=targets),geom="errorbar",conf.int=.67,width=.2)
@@ -290,7 +302,7 @@ if (!showIndividData) {
 } else {
   tit<-'threshesTheoryEachSubject'
   quartz(tit,width=8,height=7)  #(tit,width=4,height=3.5)
-  h=ggplot(thrThisCrit,aes(x=limit,y=thresh,shape=subject))
+  h=ggplot(thrThisCrit,aes(x=limit,y=thresh,color=type,shape=subject))
   h=h+theme_bw()+ facet_grid(targets~numObjects)
   dodgeAmt=0.2
   h=h+geom_point(size=2.5,position=position_dodge(width=dodgeAmt))
@@ -320,17 +332,15 @@ actual1target= rbind(actual1target2objs,actual1target2objsDuplicate)
 #Now have both speed and combined, same data, to show they are the same, in red
 actual1target=subset(actual1target,criterion==thisCrit)
 h=h+geom_point(dat=subset(actual1target,limit=="combined"),aes(group=subject),color="red")
-h=h+geom_line(dat=actual1target,aes(group=subject),color="red") #draw a line to show it's meaningless in 1-target case
+h=h+geom_line(dat=actual1target,aes(group=subject),color="purple") #draw a line to show it's meaningless in 1-target case
 h
-actual23targets= subset(thrThisCrit,targets>1 & limit=="speed")
-#NO NO NO, THESE ARE NOT THE ACTUAL- THESE ARE ASSUMING 1 TARGET IS SAME AS 2,3 TARGETS!
-actual23targets$limit= "combined" #use combined label for actual just to plot it there
-actual23targets=subset(actual23targets,criterion==thisCrit)
+#OK so I need to have dataframe each subject's limits thisCrit, possibly with type==observed
+if (!(thisCrit %in% unique(threshes_speed_123targets269objects$criterion)))
+  stop(paste("The criterion you are plotting",thisCrit,"was not provided by the fitting script"))
+actualEachSubject = subset(threshes_speed_123targets269objects,criterion==thisCrit)
+actualEachSubject$limit ="combined" #use combined label for actual data just so it plots there
 
-#For 2,3 targets are they in THRESHES? DON'T THINK SO, THEREFORE IF I WANT
-#ANOTHER CRITERION FOR ACTUAL, I NEED EXTRACTTHRESHES TO GET IT FOR ME AND PUT INTO
-#SAVED DAT
-h=h+geom_point(dat=actual23targets,aes(group=subject),color="red",position=position_dodge(width=0.6))
+h=h+geom_point(dat=actualEachSubject,aes(group=subject),color="purple",position=position_dodge(width=0.6))
 #h=h+stat_summary(dat=TwoObjs2_3targets,fun.data="mean_cl_boot",geom="errorbar",conf.int=.67,
 #               position=position_dodge(width=0.6),color="red",width=.2) 
 #+geom_line(data=2objs2_3targets,aes(group=subject),color="red")

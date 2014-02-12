@@ -7,34 +7,57 @@
 #iv
 infoMsg=paste(iv,"was fitted")
 
+# extractThreshes<- function(df,factors,curves,threshCriteria) {
+#   #iterate over all the factor levels
+#   threshes=data.frame()
+#   #expand grid all the factors' levels????
+#   for (criterion in threshCriteria) {
+#     #use point by point search to find the threshold. 
+#     myThreshGetNumeric= makeMyThreshGetNumerically(iv,criterion)
+#     
+#     psychometricTemp<- subset(psychometrics,numObjects==numObjectsThis)
+#     calcThreshForPredictn<- FALSE  #because tracking-two prediction for 6, 9 objects never gets that high. Anyway this is to address
+#     if (!calcThreshForPredictn)  
+#       psychometricTemp <- subset(psychometricTemp,numTargets!="2P")
+#     #Don't do it where criterion corresponds to below chance
+#     #psychometricTemp <- subset(psychometricTemp, numObjects > 1/threshCriterion) #For these numObjects conditions, chance is above the current criterion
+#     
+#     threshesThisNumeric = ddply(psychometricTemp,factorsPlusSubject,myThreshGetNumeric) 
+#     threshesThisNumeric$criterion <- threshCriterion
+#     threshesThis<- merge(threshesThisNumeric,fitParms)
+#     threshes<- rbind(threshes, threshesThis)    
+#   }
+#   return (threshes)
+# }
+
 #go point by point to find thresholds for each criterion
-#worstLapseRate <- max(fitParms$lapseRate)
-#paste("Can't calculate threshold above criterion level of",1-worstLapseRate,"because that's the worst subject")
+worstLapseRate <- max(fitParms$lapseRate)
+paste("Can't calculate threshold above criterion level of",1-worstLapseRate,"because that's the worst subject")
 #maxCriterion <- 1-worstLapseRate
 maxCriterion <- .95
 #seq(from=0.67,to=maxCriterion,by=0.03) 
-#threshCriteria<- (1.00 + 1 / unique(fitParms$numObjects)) / 2.0  #midpoint thresholds
+threshCriteria<- (1.00 + 1 / unique(fitParms$numObjects)) / 2.0  #midpoint thresholds
 threshes <- data.frame()
 #psychometrics <- thisPsychometrics
 for (numObjectsThis in unique(fitParms$numObjects)) {
-  #for (threshCriterion in threshCriteria) {
-  threshCriterion <- (1.00 + 1/numObjectsThis) / 2.0  #midpoint threshold
-  
-  cat('Testing criterion:',threshCriterion)
-  #use point by point search to find the threshold. 
-  myThreshGetNumeric= makeMyThreshGetNumerically(iv,threshCriterion)
-  
-  psychometricTemp<- subset(psychometrics,numObjects==numObjectsThis)
-  calcThreshForPredictn<- FALSE  #because tracking-two prediction for 6, 9 objects never gets that high. Anyway this is to address
-  if (!calcThreshForPredictn)  
-    psychometricTemp <- subset(psychometricTemp,numTargets!="2P")
-  #Don't do it where criterion corresponds to below chance
-  #psychometricTemp <- subset(psychometricTemp, numObjects > 1/threshCriterion) #For these numObjects conditions, chance is above the current criterion
-  
-  threshesThisNumeric = ddply(psychometricTemp,factorsPlusSubject,myThreshGetNumeric) 
-  threshesThisNumeric$criterion <- threshCriterion
-  threshesThis<- merge(threshesThisNumeric,fitParms)
-  threshes<- rbind(threshes, threshesThis)
+  #threshCriterion <- (1.00 + 1/numObjectsThis) / 2.0  #midpoint threshold
+  for (threshCriterion in threshCriteria) {
+    cat('Extracting thresh for criterion:',threshCriterion)
+    #use point by point search to find the threshold. 
+    myThreshGetNumeric= makeMyThreshGetNumerically(iv,threshCriterion)
+    
+    psychometricTemp<- subset(psychometrics,numObjects==numObjectsThis)
+    calcThreshForPredictn<- FALSE  #because tracking-two prediction for 6, 9 objects never gets that high. Anyway this is to address
+    if (!calcThreshForPredictn)  
+      psychometricTemp <- subset(psychometricTemp,numTargets!="2P")
+    #Don't do it where criterion corresponds to below chance
+    #psychometricTemp <- subset(psychometricTemp, numObjects > 1/threshCriterion) #For these numObjects conditions, chance is above the current criterion
+    
+    threshesThisNumeric = ddply(psychometricTemp,factorsPlusSubject,myThreshGetNumeric) 
+    threshesThisNumeric$criterion <- threshCriterion
+    threshesThis<- merge(threshesThisNumeric,fitParms)
+    threshes<- rbind(threshes, threshesThis)
+  }
 }
 
 threshes$targets<-threshes$numTargets
