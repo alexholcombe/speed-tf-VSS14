@@ -170,8 +170,7 @@ afterBothLims<-function(df) {
 }
 factors<-c("numObjects","targets","speed","subject","criterion")
 psAfterBoth= ddply(psychometrics,factors,afterBothLims)
-psAfterBoth$limit= "combined"
-
+psAfterBoth$limit= "combined"; psAfterBoth$type= "theory"
 #Add psAfterBoth onto psychometrics so will automatically plot all.
 psychometricsLims= rbind(psychometrics,psAfterBoth)
 
@@ -195,24 +194,24 @@ show(g)
 #putting that in right when
 
 #Extract threshes from model curves. 
-threshes <- data.frame()
 factorsPlusLimit<-c(factors,"limit")
-factorsPlusLimit= factorsPlusLimit[ factorsPlusLimit!="speed" ] #delete speed
-for (threshCriterion in threshCriteria) {  
-  #use point by point search to find the threshold. 
+factorsPlusLimit= factorsPlusLimit[ factorsPlusLimit!="speed" ] #delete speed because gotta have all speeds together
+#use point by point search to find the threshold. 
+getThreshAndPreserveType <- function(df) {  #otherwise type gets thrown away, want to keep it for plotting color
+  stopifnot(length(unique(df$criterion))==1)
+  threshCriterion = df$criterion[1]
+  #set up thresh-getter for this criterion
   myThreshGetNumeric= makeMyThreshGetNumerically("speed",threshCriterion)
-  getThreshAndPreserveType <- function(df) {  #otherwise type gets thrown away, want to keep it for plotting color
-    ansDf = myThreshGetNumeric(df)
-    type= df$type[1]
-    stopifnot(length(unique(df$type))==1)    
-    ansDf$type = type
-    ansDf
-  }
-  threshesThisNumeric = ddply(psychometricsLims,factorsPlusLimit,getThreshAndPreserveType) 
-#  threshesThisNumeric = ddply(psychometricsLims,factorsPlusLimit,myThreshGetNumeric) 
-  threshesThisNumeric$criterion <- threshCriterion
-  threshes<- rbind(threshes, threshesThisNumeric)
+  ansDf = myThreshGetNumeric(df)
+  ansDf$criterion = threshCriterion
+  type= df$type[1]
+  stopifnot(length(unique(df$type))==1)    
+  ansDf$type = type
+  dj<<-ansDf #debugON
+  ansDf
 }
+threshes = ddply(psychometricsLims,factorsPlusLimit,getThreshAndPreserveType) 
+
 failedConds=threshes[is.na(threshes$thresh),c(3,4,1,2,8)]
 if (nrow(failedConds)>0) {
   cat('Failed to find thresh from psychometric for following conditions. Often this happens')
@@ -262,9 +261,9 @@ oldThresh2Objs1target = subset(twoObjs123targets, numTargets==1 & numObjects==2 
 colsToCompare=c("numObjects","targets","subject","criterion","thresh","slopeThisCrit")
 oldThresh2Objs1target=oldThresh2Objs1target[,colsToCompare]
 newThresh2Objs1target=newThresh2Objs1target[,colsToCompare]
-#setdiff(old,new) check whether any in new are not in old
 
-if (any(oldThresh2Objs1target$criterion != newThresh2Objs1target$criterion)) {
+#setdiff(new,old) check whether any in new are not in old
+if (length(setdiff( unique(newThresh2Objs1target$criterion), unique(oldThresh2Objs1target$criterion) ))>0) {
   warning("You used a different criterion to extract predicted thresholds")
   #cat("old=")
 }
@@ -316,6 +315,9 @@ if (!showIndividData) {
 #1-target 2 objs assumed to be true speed limit. Let's see if decrease with targets can be
 #explained by 2-target, 3-target tf limits
 #h+stat_summary(fun.y=mean,geom="point",dat=TwoObjs2_3targets,color="red")
+
+#NOW DEAL WITH THIS, HOPEFULLY BY MORE CONSOLIDATED OBSERVED DATA
+#actual1target, actualEachSubject
 
 #Extend red line in 1-target case to speed side, because it's identical
 actual1target2objs = subset(thrThisCrit,targets==1 & limit=="speed" & numObjects==2)
