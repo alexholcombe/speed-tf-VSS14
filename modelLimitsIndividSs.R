@@ -1,9 +1,9 @@
 #working directory set by starting Rstudio via .Rproj file
 #setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/speed-tf-VSS14")
-source('helpers/psychometricHelpRobust6.R') #for makeMyPsychoCorr, 
+source('helpers/psychometricHelpRobust6.R') #for makeMyPsychoCorr, themeAxisTitleSpaceNoGridLinesLegendBox
 
 meanIfNumber<-function(x) {if (is.numeric(x)) return (mean(x))  else return (unique(x)[1]) }
-colsToDelete=c("nErrs","temp","nWarns","firstWarn","error","targets") #will use targets instead of numTargets
+colsToDelete=c("nErrs","temp","nWarns","firstWarn","error","targets","thresh","slopeThisCrit","temporalFreq") 
 
 #######Try it for E1 threshes123targets269objects of HolcombeChen2014VSS.  threshes gotten by doAllAnalyses.R
 #Modeled effect of additional object on speed threshold (taking into account t.f. limit).
@@ -24,15 +24,25 @@ actualLimitEachSubject<-actualLimitEachSubject[ , !names(actualLimitEachSubject)
 ###################################################################################################
 #Create predicted psychometric curve for each condition I'm interested in, based on 
 #theoretical speed limit. 
-numSpeeds=150 #250
-maxSpeed = 5 #4 depends on subjects and criteiron, how far have to go to fall to threshold
-speeds<-seq(0.04,maxSpeed,length.out=numSpeeds)
-nTarg=c(1,2,3)
-threshCriteria<-c(0.75,  (1.00 + 1/6) / 2.0 )
-conditns= expand.grid( targets=nTarg, numObjects=c(2,3,6),
-                       speed=speeds,subject=unique(speedLimitEachSubject$subject) )
 
-psychometricsSpeed= speedLimitEachSubject
+#eliminate any copies for each criterion, will use my own criteria
+speedLimitEachSubject<-speedLimitEachSubject[ , names(speedLimitEachSubject) != 'criterion']
+speedLimitEachSubject<-unique(speedLimitEachSubject)
+tfLimitEachSubject<-tfLimitEachSubject[ , names(tfLimitEachSubject) != 'criterion']
+tfLimitEachSubject<-unique(tfLimitEachSubject)
+
+#Aggregate so can also plot mean between participants
+c1=c("numObjects","numTargets") #variable to preserve, collapse across rest
+speedLimitMean<-aggregate(speedLimitEachSubject, by=speedLimitEachSubject[c1], #var to preserve
+                                  meanIfNumber) #average whole thing
+tfLimitMean<-aggregate(tfLimitEachSubject, by=tfLimitEachSubject[c1], #var to preserve
+                          meanIfNumber) #average whole thing
+speedLimitMean<-speedLimitMean[c(-1,-2)] #delete first column (created by aggregate)
+tfLimitMean<-tfLimitMean[c(-1,-2)] #delete first column (created by aggregate)
+speedLimitMean$subject="mean"
+tfLimitMean$subject="mean"
+
+psychometricsSpeed= rbind(speedLimitEachSubject,speedLimitMean)
 #replicate for each number of targets
 rn = row.names(psychometricsSpeed)
 psychometricsSpeed= psychometricsSpeed[ rep(rn, times=length(nTarg)),  ] #replicate whole thing for each target num
@@ -40,6 +50,13 @@ psychometricsSpeed$targets = nTarg[ rep(seq(1,length(nTarg)), each=length(rn)) ]
 row.names(psychometricsSpeed)= NULL
 psychometricsSpeed$numObjects=NULL #will be replaced, padded-out by conditns
 psychometricsSpeed$numTargets=NULL #will use conditns' targets
+
+numSpeeds=150 #250
+maxSpeed = 5 #4 depends on subjects and criterion, how far have to go to fall to threshold
+speeds<-seq(0.04,maxSpeed,length.out=numSpeeds)
+nTarg=c(1,2,3)
+conditns= expand.grid( targets=nTarg, numObjects=c(2,3,6),
+                       speed=speeds,subject=unique(psychometricsSpeed$subject) )
 
 psychometricsSpeed = merge(psychometricsSpeed,conditns)
 psychometricsSpeed$chanceRate = 1/psychometricsSpeed$numObjects
@@ -49,7 +66,10 @@ psychometricsSpeed[psychometricsSpeed$targets==1 & psychometricsSpeed$numObjects
 
 #Create predicted psychometric curve for each condition I'm interested in, based on theoretical tf limit
 #experimentally observed for each number of targets
-psychometricsHz= tfLimitEachSubject #includes separate limit for each target number
+psychometricsHz= rbind(tfLimitEachSubject,tfLimitMean) #includes separate limit for each target number
+#eliminate any copies for each criterion, will use my own criteria
+psychometricsHz<-psychometricsHz[ , names(psychometricsHz) != 'criterion']
+psychometricsHz<-unique(psychometricsHz)
 row.names(psychometricsHz)=NULL
 psychometricsHz$numObjects=NULL #will be replaced by conditns
 psychometricsHz$targets = psychometricsHz$numTargets
@@ -81,21 +101,32 @@ psychometricsHz$limit<-"tf"
 psychometricsSpeed$tf=psychometricsSpeed$speed*psychometricsSpeed$numObjects
 
 psychometrics= rbind(psychometricsSpeed,psychometricsHz)
-#psychometrics= subset(psychometricsSpeed, targets==1 & numObjects==2 & subject=="FHL") #slopeThisCrit -1.99, thresh=1.96 #debugOFF
-
-tit<-'Both_rps_and_Hz_limits'
-quartz(tit,width=4,height=4)
-g=ggplot(data=psychometrics,
+psychometrics$distractors = psychometrics$numObjects-1
+tit<-'Both_rps_and_Hz_limits' #If you want to see average psychometric function, for now have to go to modelLimits.R
+quartz(tit,width=5,height=4)
+g=ggplot(data=subset(psychometrics,subject!="mean"),
     aes(x=speed,y=correct,color=limit,shape=subject)) 
-g=g+geom_point()+theme_bw()
+#g=g+geom_point()
 g=g+geom_line()
-g=g+facet_grid(targets~numObjects)
+g=g+facet_grid(targets~distractors)
 g=g+ylab('Proportion Correct')
-g=g+xlab('Speed (rps)') 
-g=g+ggtitle('overlap much greater for 3-object case')
+g=g+xlab('Speed (rps)')
+g=g+scale_x_continuous(breaks=c(0,1,2,3))
+g=g+themeAxisTitleSpaceNoGridLinesLegendBox
+g=g+ggtitle('overlap much greater for 2-distractor case')
 show(g)
-ggsave( paste('figs/',tit,'.png',sep='') )
+ggsave( paste('figs/',tit,'.png',sep=''), bg="transparent")
 
+tit<-'Mean_rps_and_Hz_limits' 
+quartz(tit,width=5,height=4)
+g=g %+% subset(psychometrics,subject=="mean")
+show(g)
+ggsave( paste('figs/',tit,'.png',sep=''), bg="transparent")
+tit<-'Mean_rps_and_Hz_limits_1target' 
+quartz(tit,width=5,height=4/2)
+g=g %+% subset(psychometrics,subject=="mean" & targets==1)
+show(g)
+ggsave( paste('figs/',tit,'.png',sep=''), bg="transparent")
 #################################################################################
 #Multiply limiting psychometric functions together, then extract resulting threshes
 pAfterBothLimits<- function(p1,p2,numObjects,lapse1,lapse2) {
@@ -168,33 +199,49 @@ afterBothLims<-function(df) {
   speedParms$correct = pAfterBoth
   return(speedParms)
 }
-factors<-c("numObjects","targets","speed","subject","criterion")
-psAfterBoth= ddply(psychometrics,factors,afterBothLims)
+factors<-c("numObjects","targets","speed","subject")
+psAfterBoth= ddply(psychometrics,factors,afterBothLims)  #VERY TIME-INTENSIVE ESP. IF FINE SPEED SAMPLING
+save.image("temp/tempDoneModelLimitsUpToPsAfterBoth") #load(("temp/tempDoneModelLimitsUpToPsAfterBoth")
 psAfterBoth$limit= "combined"; psAfterBoth$type= "theory"
 #Add psAfterBoth onto psychometrics so will automatically plot all.
 psychometricsLims= rbind(psychometrics,psAfterBoth)
-
+#psychometricsLims$limit= factor(psychometricsLims$limit) #change order so combined plotted first so doesn't overplot
+#psychometricsLims$limit <- factor(psychometricsLims$limit, levels(psychometricsLims$limit)[c(2,3,1)])
 tit<-'rps_and_Hz_limits_combined'
 quartz(tit,width=5,height=3.5)
-g=ggplot(data=psychometricsLims, alpha=.5,
+g=ggplot(data=subset(psychometricsLims,subject!="mean"), alpha=.5,
       aes(x=speed,y=correct,color=limit,shape=subject))
-g=g+geom_point()
-g=g+geom_line(aes(size=as.factor(limit)))+theme_bw()
+#g=g+geom_point()
+g=g+geom_line(aes(size=as.factor(limit)),alpha=.75)
 g=g+scale_size_manual(values=c(3,1,1)) #combined thickest
 g=g+facet_grid(targets~numObjects)
 g=g+ylab('Proportion Correct')
 g=g+xlab('Speed (rps)') 
-g=g+ggtitle('interactn greater for 3-object case')
-g<-g+ scale_y_continuous(breaks=c(0,0.5,1))
-g=g+scale_color_manual(values=c("black","blue","red")) #make combined black
-#g=g+scale_linetype_manual(size=c(10,1,1))
+g=g+scale_x_continuous(breaks=c(0,1,2,3,4))
+g=g+ggtitle('interactn greater for 2-distractor case')
+g<-g+themeAxisTitleSpaceNoGridLinesLegendBox
+#g<-g+scale_y_continuous(breaks=c(0,0.5,1))
+g=g+scale_color_manual(values=c("grey50","red","blue")) 
+#g=g+scale_linetype_manual(values=c("dashed","solid","solid"))
 show(g)
+tit<-'Mean_rps_and_Hz_limits' 
+quartz(tit,width=5,height=4)
+g=g %+% subset(psychometricsLims,subject=="mean") + ggtitle("Mean shows little 1-target limit overlap")
+show(g)
+ggsave( paste('figs/',tit,'.png',sep=''), bg="transparent")
+tit<-'Mean_rps_and_Hz_limits_1target' 
+quartz(tit,width=5,height=4/1.5)
+g=g %+% subset(psychometricsLims,subject=="mean" & targets==1)
+show(g)
+ggsave( paste('figs/',tit,'.png',sep=''), bg="transparent")
 
 #But if the parameters of the fit came from tf as the variable, need to make sure I'm
 #putting that in right when
 
 #Extract threshes from model curves. 
-factorsPlusLimit<-c(factors,"limit")
+psychometricsLims$criterion= (1.00 + 1 /psychometricsLims$numObjects)) / 2.0 #midpoint threshold 
+
+factorsPlusLimit<-c(factors,"criterion","limit")
 factorsPlusLimit= factorsPlusLimit[ factorsPlusLimit!="speed" ] #delete speed because gotta have all speeds together
 #use point by point search to find the threshold. 
 getThreshAndPreserveType <- function(df) {  #otherwise type gets thrown away, want to keep it for plotting color
@@ -221,7 +268,31 @@ if (nrow(failedConds)>0) {
 #reorder factor levels
 threshes$limit = factor(threshes$limit,unique(threshes$limit)[c(2,3,1)]) #speed,tf,combined
 
+midPointThreshesOnly = data.frame() #Subset numObjects,midpoint criterion combos. Dunno how to do complex subset
+for (thisNumObjects in unique(threshes$numObjects)) {
+  criterionMidPointThresh = (1.00 + 1/thisNumObjects) / 2.0
+  thisThreshes = subset(threshes,numObjects==thisNumObjects)
+  if (! (criterionMidPointThresh %in% thisThreshes$criterion) ) {
+    stop(paste('Need',criterionMidPointThresh,' but only have', toString(unique(thisThreshes$criterion))))
+  }
+  thisThreshes = subset(thisThreshes,criterion==criterionMidPointThresh)
+  rbind(midPointThreshesOnly,thisThreshes)
+}
+speedLimitEachSubject<-speedLimitEachSubject[ , !names(speedLimitEachSubject) %in% colsToDelete] 
+#HEY HOW TO DO CONDITIONAL SUBSET OF MULTIPLE COLUMNS
+
 toMakeLine= subset(threshes,!is.na(thresh)) #omit where couldn't extract thresh
+threshLine <- function(df) {   #should be sent a one-row piece of data frame with threshold speed the last column
+  #assumes that df has column "thresh"
+  threshes = df$thresh
+  speeds=c(0,threshes[1],threshes[1])
+  yMin=0
+
+  corrects=c(df$criterion,df$criterion,yMin-.2) #draw down to horizontal axis. The -.2 makes sure it extends into margin
+  grid<-data.frame(speed=speeds,correct=corrects)
+  #print('grid='); print (grid)
+  return (grid) 
+}
 threshLines= ddply(toMakeLine,factorsPlusLimit,threshLine)
 #threshLines=subset(threshLines,!is.na(speed)) #tf 2 objects 2 rings cut off
 minY=min(threshLines$correct) #replace minimum value with higher
@@ -278,8 +349,38 @@ if (any( abs(cmp$thresh.x-cmp$thresh.y) >.03 ) | any( abs(cmp$slopeThisCrit.x-cm
 }
 ####End check for discrepancies ###########################################
 
-thisCrit=threshCriteria[2]
-thrThisCrit=subset(threshes,criterion==thisCrit)
+useMidPointCriteria=TRUE
+if (useMidPointCriteria) {
+  midPointCriteria = data.frame(numObjects= unique(threshes$numObjects))
+  midPointCriteria$critToPlot = (1.0 + 1/midPointCriteria$numObjects) / 2.0
+  thrThisCrit = merge(threshes,midPointCriteria)
+  #dataframe that indicate the appropriate crit to use. 
+  #Then, take only rows where criterion and critToPlot match
+  thrThisCrit = thrThisCrit[thrThisCrit$critToPlot == thrThisCrit$criterion,  ]
+  #ISSUE: won't plot 3 objects because appropriate criterion not inherited from extractThreshes
+  #because that condition wasn't run. To address that I'd have to add the appropriate criterion
+  #by adding another replication of speedLimitEachSubject or something way up top
+  # critToPlot is NA, meaning that extractThreshes.R didn't calculate it (probably because
+  # had no data for that numObjects condition)
+  checkIfGotCriterionObjectsCombo <- function(df,threshes) {
+    #hh<<-df
+    thr = subset(threshes,numObjects==df$numObjects)
+    #cat(thr$criterion); cat(paste("\n"))
+    isItThere = df$critToPlot %in% thr$criterion
+    cat(isItThere)
+    cat(df$numObjects)
+    print(df)
+    if (!(df$critToPlot %in% thr$criterion)) 
+      warning(paste("This criterion",as.character(df$critToPlot),"not extracted by extractThreshes",
+                    "for numObjects=",as.character(df$numObjects),"maybe because no data"))
+    return (0)
+  }
+  ddply(midPointCriteria,"numObjects",checkIfGotCriterionObjectsCombo,threshes) 
+} else { 
+  thisCrit=threshCriteria[1]
+  thrThisCrit=subset(threshes,criterion==thisCrit)
+}
+
 showIndividData=TRUE
 if (!showIndividData) {
   tit<-'threshesTheory'
@@ -330,7 +431,7 @@ actual1target= rbind(actual1target2objs,actual1target2objsDuplicate)
 actual1target=subset(actual1target,criterion==thisCrit)
 h=h+geom_point(dat=subset(actual1target,limit=="combined"),aes(group=subject),color="red")
 h=h+geom_line(dat=actual1target,aes(group=subject),color="red",lty=2) #draw a line to show it's meaningless in 1-target case
-h
+show(h)
 #OK so I need to have dataframe each subject's limits thisCrit, possibly with type==observed
 if (!(thisCrit %in% unique(threshes_speed_123targets269objects$criterion)))
   stop(paste("The criterion you are plotting",thisCrit,"was not provided by the fitting script"))
@@ -339,8 +440,7 @@ actualEachSubject = subset(actualEachSubject,(numObjects>2 | targets>1)) #handle
 actualEachSubject$limit ="combined" #use combined label for actual data just so it plots there
 
 h=h+geom_point(dat=actualEachSubject,aes(group=subject),color="red",position=position_dodge(width=0.6))
-
-captn=paste("Criterion=",as.character(round(thisCrit,3)))
+captn=paste("Criterion",ifelse(useMidPointCriteria,"=midPoints",as.character(round(thisCrit,3))))
 captn=paste(captn,"Fit with lapse rate")
 if (length(unique(threshes_tf_123targets269objects$lapseRate))==1) {
   captn=paste(captn,as.numeric(unique(threshes_tf_123targets269objects$lapseRate)[1]))
@@ -350,6 +450,7 @@ h=h+ ggtitle(captn) +theme(plot.title=element_text(size=7))
 #theme(plot.title = element_text(lineheight=3, face="bold", color="black", size=29))
 show(h)
 tit<-paste(tit,'withActualResult',sep='')
+tit<-paste(tit,'criterion',round(thisCrit,2)*100,sep='')
 ggsave( paste('figs/',tit,'.png',sep='') )
 dev.set(dev.prev()) #because ggsave changes which window active, but I want to modify more
 
@@ -378,8 +479,6 @@ show(h)
 tit<-paste(tit,'withMethodAdjstment',sep='')
 ggsave( paste('figs/',tit,'.png',sep='') )
 
-#
-LET'S ADD IN 9 OBJECTS PREDICTED SPEED LIMIT AND TF LIMIT??
 
 #verdict: decrease is about what would predict. I guess I should present methodAdjstment as something to validate a traditnl CRT experiment
 
