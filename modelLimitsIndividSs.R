@@ -14,7 +14,7 @@ load("data/threshes_tf_123targets269objects.Rdata",verbose=TRUE)
 #Assuming tfLimit changes with targets, but speed limit doesn't.
 #Eventually, need to compare to converse prediction that speedLimit changes with targets, but tfLimit doesn't
 tfLimitEachSubject = subset(threshes_tf_123targets269objects, numObjects==9) #assuming this is true tf limit
-actualLimitEachSubject = threshes_tf_123targets269objects #not currently used for anything until add observed data at end
+actualLimitEachSubject = threshes_speed_123targets269objects #not currently used for anything until add observed data at end
 
 speedLimitEachSubject<-speedLimitEachSubject[ , !names(speedLimitEachSubject) %in% colsToDelete] 
 tfLimitEachSubject<-tfLimitEachSubject[ , !names(tfLimitEachSubject) %in% colsToDelete] 
@@ -28,6 +28,8 @@ speedLimitEachSubject<-speedLimitEachSubject[ , names(speedLimitEachSubject) != 
 speedLimitEachSubject<-unique(speedLimitEachSubject)
 tfLimitEachSubject<-tfLimitEachSubject[ , names(tfLimitEachSubject) != 'criterion']
 tfLimitEachSubject<-unique(tfLimitEachSubject)
+actualLimitEachSubject<-actualLimitEachSubject[ , names(actualLimitEachSubject) != 'criterion']
+actualLimitEachSubject<-unique(actualLimitEachSubject)
 
 #Aggregate so can also plot mean between participants
 c1=c("numObjects","numTargets") #variable to preserve, collapse across rest
@@ -35,13 +37,21 @@ speedLimitMean<-aggregate(speedLimitEachSubject, by=speedLimitEachSubject[c1], #
                                   meanIfNumber) #average whole thing
 tfLimitMean<-aggregate(tfLimitEachSubject, by=tfLimitEachSubject[c1], #var to preserve
                           meanIfNumber) #average whole thing
+actualLimitMean<-aggregate(actualLimitEachSubject, by=actualLimitEachSubject[c1], #var to preserve
+                       meanIfNumber) #average whole thing
 speedLimitMean<-speedLimitMean[c(-1,-2)] #delete first column (created by aggregate)
 tfLimitMean<-tfLimitMean[c(-1,-2)] #delete first column (created by aggregate)
+actualLimitMean<-actualLimitMean[c(-1,-2)] #delete first column (created by aggregate)
 speedLimitMean$subject="mean"
 tfLimitMean$subject="mean"
+actualLimitMean$subject="mean"
 
 psychometricsSpeed= rbind(speedLimitEachSubject,speedLimitMean)
+psychometricsHz= rbind(tfLimitEachSubject,tfLimitMean) #includes separate limit for each target number
+psychometricsActual= rbind(actualLimitEachSubject,actualLimitMean) #includes separate limit for each target number
+
 #replicate for each number of targets
+nTarg=c(1,2,3)
 rn = row.names(psychometricsSpeed)
 psychometricsSpeed= psychometricsSpeed[ rep(rn, times=length(nTarg)),  ] #replicate whole thing for each target num
 psychometricsSpeed$targets = nTarg[ rep(seq(1,length(nTarg)), each=length(rn)) ] #rep each element 
@@ -49,25 +59,20 @@ row.names(psychometricsSpeed)= NULL
 psychometricsSpeed$numObjects=NULL #will be replaced, padded-out by conditns
 psychometricsSpeed$numTargets=NULL #will use conditns' targets
 
-numSpeeds=150 #250
+numSpeeds=110 #250
 maxSpeed = 5 #4 depends on subjects and criterion, how far have to go to fall to threshold
 speeds<-seq(0.04,maxSpeed,length.out=numSpeeds)
-nTarg=c(1,2,3)
-conditns= expand.grid( targets=nTarg, numObjects=c(2,3,6),
+conditns= expand.grid( targets=nTarg, numObjects=c(2,3,6,9),
                        speed=speeds,subject=unique(psychometricsSpeed$subject) )
 
 psychometricsSpeed = merge(psychometricsSpeed,conditns)
 psychometricsSpeed$chanceRate = 1/psychometricsSpeed$numObjects
 #Have a column with "observed" or "theory" values so I don't get confused about what's what
 psychometricsSpeed$type="theory"
-psychometricsSpeed[psychometricsSpeed$targets==1 & psychometricsSpeed$numObjects==2,]$type="observed"
 
 #Create predicted psychometric curve for each condition I'm interested in, based on theoretical tf limit
 #experimentally observed for each number of targets
-psychometricsHz= rbind(tfLimitEachSubject,tfLimitMean) #includes separate limit for each target number
 #eliminate any copies for each criterion, will use my own criteria
-psychometricsHz<-psychometricsHz[ , names(psychometricsHz) != 'criterion']
-psychometricsHz<-unique(psychometricsHz)
 row.names(psychometricsHz)=NULL
 psychometricsHz$numObjects=NULL #will be replaced by conditns
 psychometricsHz$targets = psychometricsHz$numTargets
@@ -76,9 +81,15 @@ psychometricsHz$numTargets=NULL #will use conditns' targets
 psychometricsHz= merge(psychometricsHz,conditns)
 psychometricsHz$chanceRate = 1/psychometricsHz$numObjects
 psychometricsHz$type="theory"
-if (any(unique(psychometricsHz$numObjects) %in% unique(tfLimitEachSubject$numObjects))) {
-  psychometricsHz[psychometricsHz$numObjects %in% unique(tfLimitEachSubject$numObjects),]$type="observed"
-}
+
+psychometricsActualOld=psychometricsActual
+psychometricsActual$targets = psychometricsActual$numTargets;  psychometricsActual$numTargets = NULL #rename column
+conditnsActual= expand.grid( targets=unique(psychometricsActual$targets), numObjects=unique(psychometricsActual$numObjects),
+                       speed=speeds,subject=unique(psychometricsActual$subject) )
+
+psychometricsActual = merge(psychometricsActual,conditnsActual)
+#psychometricsSpeed$chanceRate = 1/psychometricsSpeed$numObjects
+psychometricsActual$type="observed"
 
 ##########################calculate predicted %correct
 psychoCorr<- makeMyPsychoCorr2("speed") #make function calculating %correct for a psychometric fx
@@ -86,6 +97,7 @@ psychometricsSpeed$myKey= 1:nrow(psychometricsSpeed)
 psychometricsSpeed$correct= daply(psychometricsSpeed,.(myKey),psychoCorr)
 psychometricsSpeed$myKey=NULL
 psychometricsSpeed$limit<-"speed"
+psychometricsSpeed$tf=psychometricsSpeed$speed*psychometricsSpeed$numObjects
 
 psychoCorr<- makeMyPsychoCorr2("tf") #will use tf as independent variable
 #Calculate predicted %correct, using psychometric function parameters
@@ -95,8 +107,12 @@ psychometricsHz$correct= daply(psychometricsHz,.(myKey),psychoCorr)
 psychometricsHz$myKey=NULL
 psychometricsHz$limit<-"tf"
 
-#give it same number of columns as Hz by adding tf
-psychometricsSpeed$tf=psychometricsSpeed$speed*psychometricsSpeed$numObjects
+psychoCorr<- makeMyPsychoCorr2("speed") #make function calculating %correct for a psychometric fx
+psychometricsActual$myKey= 1:nrow(psychometricsActual)
+psychometricsActual$tf= psychometricsActual$speed * psychometricsActual$numObjects 
+psychometricsActual$correct= daply(psychometricsActual,.(myKey),psychoCorr)
+psychometricsActual$myKey=NULL
+psychometricsActual$limit<-"observed" #type?
 
 psychometrics= rbind(psychometricsSpeed,psychometricsHz)
 psychometrics$distractors = psychometrics$numObjects-1
@@ -206,7 +222,7 @@ psychometricsLims= rbind(psychometrics,psAfterBoth)
 #psychometricsLims$limit= factor(psychometricsLims$limit) #change order so combined plotted first so doesn't overplot
 #psychometricsLims$limit <- factor(psychometricsLims$limit, levels(psychometricsLims$limit)[c(2,3,1)])
 
-#Extract threshes from model curves. 
+#Extract threshes from theoretical curves. 
 psychometricsLims$criterion= (1.00 + 1 /psychometricsLims$numObjects) / 2.0 #midpoint threshold 
 
 factorsPlusLimit<-c(factors,"criterion","limit")
@@ -225,15 +241,26 @@ getThreshAndPreserveType <- function(df) {  #otherwise type gets thrown away, wa
   dj<<-ansDf #debugON
   ansDf
 }
-threshes = ddply(psychometricsLims,factorsPlusLimit,getThreshAndPreserveType) 
-threshes$distractors = threshes$numObjects-1
-  
-failedConds=threshes[is.na(threshes$thresh),c(3,4,1,2,8)]
-if (nrow(failedConds)>0) {
-  cat('Failed to find thresh from psychometric for following conditions. Often this happens')
-  cat(' due to performance not falling low enough in speed range included.\n')
-  print(failedConds)
+threshes = ddply(psychometricsLims,factorsPlusLimit,getThreshAndPreserveType)
+
+#Extract threshes from observed curves. 
+psychometricsActual$criterion= (1.00 + 1 /psychometricsActual$numObjects) / 2.0 #midpoint threshold 
+threshesActual = ddply(psychometricsActual,factorsPlusLimit,getThreshAndPreserveType)
+
+checkWhereFailedToExtractThresh<- function(thr) {
+  failedConds=thr[is.na(thr$thresh),c(3,4,1,2,8)]
+  if (nrow(failedConds)>0) {
+    cat('Failed to find thresh from psychometric for following conditions. Often this happens')
+    cat(' due to performance not falling low enough in speed range included.\n')
+    print(failedConds)
+  }  
 }
+cat('threshes theory '); checkWhereFailedToExtractThresh(threshes)
+cat('\nthreshes actual '); checkWhereFailedToExtractThresh(threshesActual)
+
+threshes$distractors = threshes$numObjects-1
+threshesActual$distractors = threshesActual$numObjects-1
+
 #reorder factor levels
 #threshes$limit = factor(threshes$limit)
 threshes$limit = factor(threshes$limit,unique(threshes$limit)[c(2,3,1)]) #speed,tf,combined
@@ -329,30 +356,43 @@ g=g+themeAxisTitleSpaceNoGridLinesLegendBox
 show(g)
 #Plot only the MEAN of subjects
 tit<-'theoryMean1_2_5distractors'
-quartz(tit,width=6.4,height=3.5)
+quartz(tit,width=4,height=5.5)
 threshesMean = subset(threshes,subject=="mean")
-g=ggplot(threshesMean, aes( x=distractors,y=thresh,color=limit,alpha=limit))
+#threshesMean$limit[threshesMean$limit=="combined"]="predicted"
+threshesMean$limit = factor(threshesMean$limit,levels=c(levels(threshesMean$limit),"observed"),ordered=TRUE) #add observed
+threshesMean$limit = factor(threshesMean$limit,levels=levels(threshesMean$limit),
+                            labels=c("speed limit","tf limit","combined limit","observed")) #speed,tf,combined
+
+threshesMean$targets = as.factor(x=threshesMean$targets)
+levels(threshesMean$targets) = c("1 target","2 targets", "3 targets")
+g=ggplot(subset(threshesMean,distractors!=2), aes( x=distractors,y=thresh,color=limit,alpha=limit,shape=type))
 g=g+ facet_grid(targets~.) #facet_grid(targets~criterion)
-dodgeAmt=0.2
+xTicks= unique(threshes$numObjects-1) #put axis ticks at actual values used
+g<-g+scale_x_continuous(breaks=c( xTicks ))
+dodgeAmt=0.4
 g=g+ylab('threshold speed (rps)')
 g=g+geom_point(size=2.5,position=position_dodge(dodgeAmt))
 g=g+geom_line(position=position_dodge(dodgeAmt))
 #combindOnly=subset(threshesMean,limit=="combined")
 #g=g+geom_line(data=combindOnly,position=position_dodge(dodgeAmt))
 #g=g+geom_line() #doesn't work
-g=g+scale_alpha_manual(values=c(.6,.6,1)) #combined thickest
-g=g+scale_color_manual(values=c("blue","red","black")) #make combined black
+g=g+scale_alpha_manual(values=c(1,1,.6,.6)) #combined thickest
+g=g+scale_color_manual(values=c("black","purple","red","blue")) #make combined black
 g=g+themeAxisTitleSpaceNoGridLinesLegendBox
 show(g)
-ggsave( paste('figs/',tit,'.png',sep=''), bg="transparent")
 #add actual data
-#Grab actual data out of threshes
 #e.g. want 2 distractors  type==observed
-#I've only got observed for numObjects==2 and it says the criterion is 0.75
-subset(threshes,distractors==2 & subject=="mean")
-midPointCriteria = data.frame(numObjects= unique(threshes$numObjects))
-midPointCriteria$critToPlot = (1.0 + 1/midPointCriteria$numObjects) / 2.0
-thrThisCrit = merge(threshes,midPointCriteria)
+actualMean= subset(threshesActual,subject=="mean")
+actualMean$limit = factor(actualMean$limit,levels=c(levels(threshesMean$limit)),ordered=TRUE) #add observed
+
+actualMean$targets = as.factor(x=actualMean$targets); levels(actualMean$targets) = c("1 target","2 targets", "3 targets")
+g=g+geom_point(data=actualMean,size=2) + geom_line(data=actualMean)
+g
+g=g %+% subset(psychometrics,subject=="mean" & targets==1)
+
+ggsave( paste('figs/',tit,'.png',sep=''), bg="transparent")
+
+
 
 #Check for discrepancies ######################################################## 
 #Check thresholds gotten originally for 1target2objs matches new limits found by
