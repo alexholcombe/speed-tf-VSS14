@@ -9,14 +9,12 @@ colsToDelete=c("nErrs","temp","nWarns","firstWarn","error","targets","thresh","s
 #Modeled effect of additional object on speed threshold (taking into account t.f. limit).
 #For additional targets, want to check if constraint of lower t.f. limit sufficient to explain decrease of 2-object speed limit with targets
 load("data/threshes_speed_123targets269objects.Rdata",verbose=TRUE)
-speedLimitEachSubject = subset(threshes_speed_123targets269objects,numTargets==1 & numObjects==2)
+speedLimitEachSubject = subset(threshes_speed_123targets269objects,numTargets==1 & numObjects==2) #assume this is true speed limit
 load("data/threshes_tf_123targets269objects.Rdata",verbose=TRUE)
-#Assume tfLimit changes with targets, but speed limit doesn't.
+#Assuming tfLimit changes with targets, but speed limit doesn't.
 #Eventually, need to compare to converse prediction that speedLimit changes with targets, but tfLimit doesn't
-tfLimitEachSubject = subset(threshes_tf_123targets269objects, numObjects==9)
-#oneDistractorMean<-aggregate(oneDistractor, by=list(temp=oneDistractor$numObjects), meanIfNumber) #average whole thing
-#eightDistractorsMean<-aggregate(eightDistractors, by=list(temp=eightDistractors$numObjects), meanIfNumber) #average whole thing
-actualLimitEachSubject = threshes_tf_123targets269objects
+tfLimitEachSubject = subset(threshes_tf_123targets269objects, numObjects==9) #assuming this is true tf limit
+actualLimitEachSubject = threshes_tf_123targets269objects #not currently used for anything until add observed data at end
 
 speedLimitEachSubject<-speedLimitEachSubject[ , !names(speedLimitEachSubject) %in% colsToDelete] 
 tfLimitEachSubject<-tfLimitEachSubject[ , !names(tfLimitEachSubject) %in% colsToDelete] 
@@ -315,7 +313,7 @@ ggsave( paste('figs/',titg1target1subject,'.png',sep=''), bg="transparent")
 #But if the parameters of the fit came from tf as the variable, need to make sure I'm
 #putting that in right when
 
-#I need a plot of the thresholds (above was the psychometric functions)
+#I need a PLOT of the THRESHOLDS (above was the psychometric functions)
 quartz(tit,width=6.4,height=3.5)
 g=ggplot(threshes, aes( x=distractors,y=thresh,color=limit,alpha=limit,shape=subject))
 g=g+theme_bw()+ facet_grid(targets~.) #facet_grid(targets~criterion)
@@ -329,6 +327,32 @@ g=g+scale_alpha_manual(values=c(.6,.6,1)) #combined thickest
 g=g+scale_color_manual(values=c("blue","red","black")) #make combined black
 g=g+themeAxisTitleSpaceNoGridLinesLegendBox
 show(g)
+#Plot only the MEAN of subjects
+tit<-'theoryMean1_2_5distractors'
+quartz(tit,width=6.4,height=3.5)
+threshesMean = subset(threshes,subject=="mean")
+g=ggplot(threshesMean, aes( x=distractors,y=thresh,color=limit,alpha=limit))
+g=g+ facet_grid(targets~.) #facet_grid(targets~criterion)
+dodgeAmt=0.2
+g=g+ylab('threshold speed (rps)')
+g=g+geom_point(size=2.5,position=position_dodge(dodgeAmt))
+g=g+geom_line(position=position_dodge(dodgeAmt))
+#combindOnly=subset(threshesMean,limit=="combined")
+#g=g+geom_line(data=combindOnly,position=position_dodge(dodgeAmt))
+#g=g+geom_line() #doesn't work
+g=g+scale_alpha_manual(values=c(.6,.6,1)) #combined thickest
+g=g+scale_color_manual(values=c("blue","red","black")) #make combined black
+g=g+themeAxisTitleSpaceNoGridLinesLegendBox
+show(g)
+ggsave( paste('figs/',tit,'.png',sep=''), bg="transparent")
+#add actual data
+#Grab actual data out of threshes
+#e.g. want 2 distractors  type==observed
+#I've only got observed for numObjects==2 and it says the criterion is 0.75
+subset(threshes,distractors==2 & subject=="mean")
+midPointCriteria = data.frame(numObjects= unique(threshes$numObjects))
+midPointCriteria$critToPlot = (1.0 + 1/midPointCriteria$numObjects) / 2.0
+thrThisCrit = merge(threshes,midPointCriteria)
 
 #Check for discrepancies ######################################################## 
 #Check thresholds gotten originally for 1target2objs matches new limits found by
