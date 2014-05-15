@@ -504,28 +504,13 @@ makeMyMinMaxWorstCaseCurves<- function(myPlotCurve) {
 	return (fn2)
 }
 
-
-
-threshStatistic= function(df) {	# Wing ADD20101111		
- thresh=mean(df$thresh)
- sethresh=qnorm(0.975)*sd(df$thresh)/sqrt(as.numeric(length(df$thresh)))
- u95thresh=thresh+sethresh
- l95thresh=thresh-sethresh
- meanSlope=mean(df$slopeAtThresh)
- seSlope=qnorm(0.975)*sd(df$slopeAtThresh)/sqrt(as.numeric(length(df$slopeAtThresh)))
- u95Slope=meanSlope+seSlope
- l95Slope=meanSlope-seSlope
- dg=cbind(thresh,meanSlope,sethresh,seSlope,u95thresh,l95thresh,u95Slope,l95Slope)
- return( dg ) 
-}
-
-threshStatisticNum= function(df) {	# Wing ADD20101111		
- thresh=mean(df$thresh)
- sethresh=qnorm(0.975)*sd(df$thresh)/sqrt(as.numeric(length(df$thresh)))
- u95thresh=thresh+sethresh
- l95thresh=thresh-sethresh
- dg=cbind(thresh,sethresh,u95thresh,l95thresh)
- return( dg ) 
-}
-
-
+#shortcut to set ggplot options, by adding this to a ggplot object, e.g. g + themeAxisTitleSpaceNoGridLinesLegendBox
+themeAxisTitleSpaceNoGridLinesLegendBox = theme_classic() + #Remove gridlines, show only axes, not plot enclosing lines
+  theme(axis.line = element_line(size=.3, color = "grey"), 
+        axis.title.y=element_text(vjust=0.24), #Move y axis label slightly away from axis
+        axis.title.x=element_text(vjust=.10), #Move x axis label slightly away from axis
+        strip.background = element_rect(fill="transparent",color=NA),
+        legend.key = element_blank(), #don't put boxes around legend bits
+        legend.background= element_rect(color="grey90"), #put big light grey box around entire legend
+        panel.background = element_rect(fill = "transparent",colour = NA),
+        plot.background = element_rect(fill = "transparent",colour = NA)   )
