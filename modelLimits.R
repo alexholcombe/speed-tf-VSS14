@@ -1,10 +1,11 @@
+#This work and code has been superseded by modelLimitsIndividSs.R
 #working directory set by starting Rstudio via .Rproj file
 #setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/speed-tf-VSS14")
 
 source('helpers/psychometricHelpRobust6.R') #for makeMyPsychoCorr, 
 
 lapseRate = .01 #Should change fitting so it uses constant lapseRate, or else
-#incorporate lapseRate into this modelling
+#incorporate lapseRate into this modelling. This has been done in modelLimitsIndividSs.R
 meanIfNumber<-function(x) {if (is.numeric(x)) return (mean(x))  else return (unique(x)[1]) }
 colsToDelete=c("nErrs","temp","nWarns","firstWarn","subject","error","targets") #will use targets instead of numTargets
 
@@ -30,7 +31,6 @@ colsToDelete=c("nErrs","temp","nWarns","firstWarn","subject","error","targets") 
 # tfLimitParms<-tfLimitParms[ , !names(tfLimitParms) %in% colsToDelete] 
 # tfLimitParms$lapseRate<-lapseRate
 # tfLimitParms$slopeLabel="mean"
-
 
 #######Try it for E1 threshes123targets269objects of HolcombeChen2014VSS.  threshes gotten by doAllAnalyses.R
 load("data/threshes_speed_123targets269objects.Rdata",verbose=TRUE)
@@ -58,12 +58,14 @@ conditns= expand.grid(targets=c(1,2,3),numObjects=c(2,3),speed=speeds)
 psychometricsSpeed= rpsParms[ rep(row.names(rpsParms),times=nrow(conditns)),  ] #replicate
 row.names(psychometricsSpeed)= NULL
 psychometricsSpeed$numObjects=NULL #will be replaced by conditns
+psychometricsSpeed$numTargets=NULL #will use targets instead
 psychometricsSpeed = cbind(psychometricsSpeed,conditns)
 psychometricsSpeed$chanceRate = 1/psychometricsSpeed$numObjects
-  
+
 psychometricsHz= tfLimitParms[ rep(row.names(tfLimitParms),times=nrow(conditns)),  ] #replicate
 row.names(psychometricsHz)=NULL
 psychometricsHz$numObjects=NULL #will be replaced by conditns
+psychometricsHz$numTargets=NULL #will use targets instead
 psychometricsHz= cbind(psychometricsHz,conditns)
 psychometricsHz$chanceRate = 1/psychometricsHz$numObjects
 
@@ -83,21 +85,30 @@ psychometricsHz$correct= daply(psychometricsHz,.(myKey),psychoCorr)
 psychometricsHz$myKey=NULL
 psychometricsHz$limit<-"tf"
 
-#give it same number of columns as Hz by adding tf
+#give Speed same number of columns as Hz by adding tf
 psychometricsSpeed$tf=psychometricsSpeed$speed*psychometricsSpeed$numObjects
 psychometrics= rbind(psychometricsSpeed,psychometricsHz)
 
+psychometrics$distractors = psychometrics$numObjects-1
 tit<-'Both_rps_and_Hz_limits'
 quartz(tit,width=4,height=4)
 g=ggplot(data=psychometrics,
          aes_string(x="speed",y="correct",color="limit")) #linetype="factor(numObjects)",
-g=g+geom_line()+theme_bw()
-g=g+facet_grid(targets~numObjects)
+g=g+geom_line()
+g<-g+themeAxisTitleSpaceNoGridLinesLegendBox
+g=g+facet_grid(targets~distractors)
 g=g+ylab('Proportion Correct')
+g<-g+ scale_x_continuous(breaks=c(0,1,2,3))
 g=g+xlab('Speed (rps)') 
-g=g+ggtitle('overlap much greater for 3-object case')
+g=g+ggtitle('overlap much greater for 2-distractor case')
 show(g)
-ggsave( paste('figs/',tit,'.png',sep='') )
+ggsave( paste('figs/',tit,'.png',sep=''),bg="transparent" )
+
+tit<-'Both_rps_and_Hz_limits_1targetOnly'
+quartz(tit,width=4,height=2)
+g<-g %+% subset(psychometrics,targets==1) #For VSS2014 poster, show only 1-target condition
+show(g)
+ggsave( paste('figs/',tit,'.png',sep=''),bg="transparent" )
 
 #################################################################################
 #Multiply it with each other, then extract resulting threshes
@@ -132,13 +143,6 @@ pAfterBothLimits<- function(p1,p2,numObjects,lapse) {
 #   p = pAfterBothLimits(pBasedOnSpeedLimit,pBasedOnTFlimit,nObjs,.01)
 #   cat(pBasedOnSpeedLimit,pBasedOnTFlimit,p,'\n')
 # }
-
-#I could merge the parameters for speed and tf, and then 
-
-#Or I could merge the corresponding p's, then myAfterBothLimits
-#could operate row-by-row
-#So the "after" would be a separate dataframe
-#Or I could split by all variables except limittype, so that after fx would recv both
 
 psychoCorrSpeed<- makeMyPsychoCorr2("speed") #will use speed as independent variable
 psychoCorrTf<- makeMyPsychoCorr2("tf") #will use tf as independent variable
@@ -186,12 +190,6 @@ g<-g+ scale_y_continuous(breaks=c(0,0.5,1))
 g=g+scale_color_manual(values=c("black","blue","red")) #make combined black
 #g=g+scale_linetype_manual(size=c(10,1,1))
 show(g)
-#Eventually, need to take each subject's data and get their personal predicted curve?
-#All I need is the HzParms and rpsParms with a new psychoCorrThisSpeed
-#Then go through all speeds and calculate combined fit. Then plot the threshold
-
-#But if the parameters of the fit came from tf as the variable, need to make sure I'm
-#putting that in right when
 
 #Extract threshes from model curves. 
 threshes <- data.frame()

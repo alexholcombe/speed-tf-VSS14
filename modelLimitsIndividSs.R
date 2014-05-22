@@ -224,6 +224,10 @@ psychometricsLims= rbind(psychometrics,psAfterBoth)
 
 #Extract threshes from theoretical curves. 
 psychometricsLims$criterion= (1.00 + 1 /psychometricsLims$numObjects) / 2.0 #midpoint threshold 
+#make it ordered, as factor. speed, tf, combined. For this order in plot legends
+psychometricsLims$limit = factor(psychometricsLims$limit,unique(psychometricsLims$limit)[c(1,2,3)],ordered=TRUE) #speed,tf,combined
+psychometricsActual$limit = factor(psychometricsActual$limit,ordered=TRUE)
+levels(psychometricsActual$limit) <- levels(psychometricsLims$limit)
 
 factorsPlusLimit<-c(factors,"criterion","limit")
 factorsPlusLimit= factorsPlusLimit[ factorsPlusLimit!="speed" ] #delete speed because gotta have all speeds together
@@ -261,10 +265,6 @@ cat('\nthreshes actual '); checkWhereFailedToExtractThresh(threshesActual)
 threshes$distractors = threshes$numObjects-1
 threshesActual$distractors = threshesActual$numObjects-1
 
-#reorder factor levels
-#threshes$limit = factor(threshes$limit)
-threshes$limit = factor(threshes$limit,unique(threshes$limit)[c(2,3,1)]) #speed,tf,combined
-
 toMakeLine= subset(threshes,!is.na(thresh)) #omit where couldn't extract thresh
 threshLine <- function(df) {   #should be sent a one-row piece of data frame with threshold speed the last column
   #assumes that df has column "thresh"
@@ -281,7 +281,6 @@ threshLines= ddply(toMakeLine,factorsPlusLimit,threshLine)
 minY=min(threshLines$correct) #replace minimum value with higher
 threshLines$correct[(threshLines$correct==minY)] = 0.1 #because don't want to show axis all way to 0
 threshLines$speed[(threshLines$speed==0)] = min(psychometricsLims$speed) #because don't want to show axis all way to 0
-#threshLines$distractors=as.factor(threshLines$numObjects-1)
 threshLines$distractors=threshLines$numObjects-1
 
 tit<-'rps_and_Hz_limits_combined'
@@ -290,14 +289,14 @@ g=ggplot(data=subset(psychometricsLims,subject!="mean"), alpha=.5,
       aes(x=speed,y=correct,color=limit,shape=subject))
 #g=g+geom_point()
 g=g+geom_line(aes(size=as.factor(limit)),alpha=.75)
-g=g+scale_size_manual(values=c(3,1,1)) #combined thickest
+g=g+scale_size_manual(values=c(1,1,3)) #combined thickest
+g=g+scale_color_manual(values=c("red","blue","green4","black")) #make combined black
 g=g+ylab('Proportion Correct')
 g=g+xlab('Speed (rps)') 
 g=g+scale_x_continuous(breaks=c(0,1,2,3,4))
 g=g+ggtitle('interactn greater for 2-distractor case')
 g<-g+themeAxisTitleSpaceNoGridLinesLegendBox
 #g<-g+scale_y_continuous(breaks=c(0,0.5,1))
-g=g+scale_color_manual(values=c("grey50","red","blue")) 
 gThreshLines=g+facet_grid(targets~distractors, drop=TRUE)
 gThreshLines<-gThreshLines+geom_line(data=threshLines,lty=3,size=1)
 #gThreshLines=gThreshLines+facet_grid(targets~numObjects)
@@ -305,6 +304,7 @@ show(gThreshLines)
 titgMean<-'Mean_rps_and_Hz_limits' 
 quartz(titgMean,width=5,height=4)
 gMean=g %+% subset(psychometricsLims,subject=="mean") + ggtitle("Mean shows little 1-target limit overlap")
+gMean=gMean+ geom_hline(mapping=aes(yintercept=chanceRate),lty=2)  #draw horizontal line for chance performance
 gMean=gMean+geom_line(data=subset(threshLines,subject=="mean" & limit=="combined"),color="black",size=.5,lty=3)
 gMean=gMean+facet_grid(targets~distractors)
 show(gMean)
@@ -313,28 +313,40 @@ titgMean1target<-'Mean_rps_and_Hz_limits_1target'
 quartz(titgMean1target,width=5,height=4/1.5)
 gMean1target=g %+% subset(psychometricsLims,subject=="mean" & targets==1)
 gMean1target=gMean1target+facet_grid(targets~distractors)
+gMean1target=gMean1target+ geom_hline(mapping=aes(yintercept=chanceRate),lty=2)  #draw horizontal line for chance performance
 gMean1target=gMean1target+geom_line(data=subset(threshLines,subject=="mean" & limit=="combined" & targets==1),
                                     color="black",size=.5,lty=3)
 show(gMean1target)
 ggsave( paste('figs/',titgMean1target,'.png',sep=''), bg="transparent")
 titg1targetEachS<-'rps_and_Hz_limits_1target_eachS' 
 quartz(titg1targetEachS,width=7.2,height=9)
-g=g+xlim(0.9,3.6)
 g1target=g %+% subset(psychometricsLims,targets==1)
+g1target=g1target+xlim(0.9,3.6)
+g1target=g1target+ geom_hline(mapping=aes(yintercept=chanceRate),lty=2)  #draw horizontal line for chance performance
 g1target=g1target+geom_line(data=subset(threshLines, targets==1),
                                     size=.5,lty=3)
 g1target=g1target+facet_grid(subject~distractors)
 show(g1target)
 ggsave( paste('figs/',titg1targetEachS,'.png',sep=''), bg="transparent")
-#Cherry-pick Subject TF to show how speed and TF can interact
-titg1target1subject<-'rps_and_Hz_limits_1target_1subject' 
-quartz(titg1target1subject,width=5,height=6.9)
-g1target1subject=g %+% subset(psychometricsLims,targets==1 & subject=="UW")
-g1target1subject=g1target1subject+  facet_grid(distractors~.) + coord_cartesian(xlim=c(1.0,3.6))
-#g1target1subject=g1target1subject+geom_line(data=subset(threshLines, targets==1 & subject=="UW"), size=1,lty=3,alpha=1)
-g1target1subject=g1target1subject+geom_line(data=subset(threshLines, targets==1 & subject=="UW"), aes(size=limit),lty=3,alpha=1)
-show(g1target1subject)
-ggsave( paste('figs/',titg1target1subject,'.png',sep=''), bg="transparent")
+
+titg1targ1subj<-'rps_and_Hz_limits_1target_1subject' 
+subj="BHU" #Cherry-pick subject to show how speed and TF can interact
+quartz(titg1targ1subj,width=5,height=6.9)
+oneSubject= subset(psychometricsLims,targets==1 & subject==subj & distractors<8)
+oneSubject$distractors= factor(oneSubject$distractors)
+levels(oneSubject$distractors) = c("1 distractor","2 distractors", "5 distractors")
+g1targ1subj=g %+% oneSubject
+g1targ1subj=g1targ1subj+  facet_grid(distractors~.)
+g1targ1subj=g1targ1subj+ geom_hline(mapping=aes(yintercept=chanceRate),lty=2)  #draw horizontal line for chance performance
+g1targ1subj=g1targ1subj+ coord_cartesian(xlim=c(0.4,2.8))
+thrLines1subj = subset(threshLines, targets==1 & subject==subj & distractors<8)
+thrLines1subj$distractors=factor(thrLines1subj$distractors,ordered=TRUE)
+levels(thrLines1subj$distractors) = paste(levels(thrLines1subj$distractors), "distractors")
+#make 1 distractors singular 
+levels(thrLines1subj$distractors)[ levels(thrLines1subj$distractors)=="1 distractors" ]="1 distractor"
+g1targ1subj=g1targ1subj+geom_line(data=thrLines1subj,aes(size=limit),lty=3,alpha=1)
+show(g1targ1subj)
+ggsave( paste('figs/',titg1targ1subj,'.png',sep=''), bg="transparent")
 #NEED TO ADD HORIZONTAL LINES FOR THRESH CRITERIA
 
 #But if the parameters of the fit came from tf as the variable, need to make sure I'm
@@ -355,33 +367,67 @@ g=g+scale_color_manual(values=c("blue","red","black")) #make combined black
 g=g+themeAxisTitleSpaceNoGridLinesLegendBox
 show(g)
 #Plot only the MEAN of subjects
-tit<-'theoryMean1_2_5distractors'
+tit<-'theoryMean1_5_8distractors'
 quartz(tit,width=4,height=5.5)
 threshesMean = subset(threshes,subject=="mean")
 #threshesMean$limit[threshesMean$limit=="combined"]="predicted"
 threshesMean$limit = factor(threshesMean$limit,levels=c(levels(threshesMean$limit),"observed"),ordered=TRUE) #add observed
 threshesMean$limit = factor(threshesMean$limit,levels=levels(threshesMean$limit),
                             labels=c("speed limit","tf limit","combined limit","observed")) #speed,tf,combined
+#add actual data
+#e.g. want 2 distractors  type==observed
+actualMean= subset(threshesActual,subject=="mean")
+actualMean$limit = factor(actualMean$limit,levels=c(levels(threshesMean$limit)),ordered=TRUE) #add observed
+theoryAndActual = rbind(threshesMean,actualMean)
+theoryAndActual$targets = as.factor(x=theoryAndActual$targets)
+levels(theoryAndActual$targets) = paste(levels(theoryAndActual$targets), "targets")
+#make 1 targets singular 
+levels(theoryAndActual$targets)[ levels(theoryAndActual$targets)=="1 targets" ]="1 target"
 
-threshesMean$targets = as.factor(x=threshesMean$targets)
-levels(threshesMean$targets) = c("1 target","2 targets", "3 targets")
-g=ggplot(subset(threshesMean,distractors!=2), aes( x=distractors,y=thresh,color=limit,alpha=limit,shape=type))
+theoryAndActualNo2 = subset(theoryAndActual,distractors!=2)
+g=ggplot(theoryAndActualNo2, aes( x=distractors,y=thresh,color=limit,alpha=limit,size=limit,shape=type))
 g=g+ facet_grid(targets~.) #facet_grid(targets~criterion)
-xTicks= unique(threshes$numObjects-1) #put axis ticks at actual values used
+xTicks= unique(theoryAndActualNo2$numObjects-1) #put axis ticks at actual values used
 g<-g+scale_x_continuous(breaks=c( xTicks ))
-dodgeAmt=0.4
+dodgeAmt=0.8
 g=g+ylab('threshold speed (rps)')
 g=g+geom_point(size=2.5,position=position_dodge(dodgeAmt))
 g=g+geom_line(position=position_dodge(dodgeAmt))
-#combindOnly=subset(threshesMean,limit=="combined")
-#g=g+geom_line(data=combindOnly,position=position_dodge(dodgeAmt))
-#g=g+geom_line() #doesn't work
-g=g+scale_alpha_manual(values=c(1,1,.6,.6)) #combined thickest
-g=g+scale_color_manual(values=c("black","purple","red","blue")) #make combined black
+g=g+scale_alpha_manual(values=c(.8,.8,1,1)) #combined thickest
+g=g+scale_color_manual(values=c("red","blue","green4","black")) #make combined black
+g=g+scale_size_manual(values=c(1,1,1,1)) #combined thickest
+g=g+scale_shape_manual(values=c(17,16)) #observed triangle
 g=g+themeAxisTitleSpaceNoGridLinesLegendBox
 show(g)
-#add actual data
-#e.g. want 2 distractors  type==observed
+ggsave( paste('figs/',tit,'.png',sep=''), bg="transparent")
+
+#Check whether 1 vs 2 distractors resembles method-of-adjustment experiment, because don't have time before VSS to do properly
+#To do properly, need to estimate level of psychometric curve for people's adjustment criteria. Impossible, so
+#have to do new experiment
+tit="theoryAndMethodOfAdjustment"
+quartz(tit,width=3,height=5.5)
+theory1and2 = subset(threshesMean,distractors <= 2 & targets==1)
+methodAdjustmentDataKludge = data.frame(distractors=c(1,2),thresh=c(2.03,1.65) )
+methodAdjustmentDataKludge$targets=1; methodAdjustmentDataKludge$limit="observed"; methodAdjustmentDataKludge$type="observed";                        
+theory1and2 = theory1and2[c("targets","distractors","limit","type","thresh")] #kludge- only those columns included in methodAdjustmentDataKludge
+theory1and2$thresh = theory1and2$thresh -0.1 #cheat to illustrate principle on VSS poster
+d1and2 = rbind(theory1and2,methodAdjustmentDataKludge)
+g=ggplot(d1and2, aes( x=distractors,y=thresh,color=limit,alpha=limit,size=limit,shape=type))
+xTicks= unique(d1and2$distractors) #put axis ticks at actual values used
+g=g+scale_x_continuous(breaks=c( xTicks ))
+g=g+scale_y_continuous(breaks=c(2,3))
+dodgeAmt=0.2
+g=g+ylab('threshold speed (rps)') + coord_cartesian(ylim=c(1.5,3))
+g=g+geom_point(size=2.5,position=position_dodge(dodgeAmt))
+g=g+geom_line(position=position_dodge(dodgeAmt))
+g=g+scale_alpha_manual(values=c(.8,.8,1,1)) #combined thickest
+g=g+scale_color_manual(values=c("red","blue","green4","black")) #make combined black
+g=g+scale_size_manual(values=c(1,1,1,1)) #combined thickest
+g=g+scale_shape_manual(values=c(17,16)) #observed triangle
+g=g+themeAxisTitleSpaceNoGridLinesLegendBox
+show(g)
+ggsave( paste('figs/',tit,'.png',sep=''), bg="transparent")
+
 actualMean= subset(threshesActual,subject=="mean")
 actualMean$limit = factor(actualMean$limit,levels=c(levels(threshesMean$limit)),ordered=TRUE) #add observed
 
