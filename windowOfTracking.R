@@ -12,7 +12,8 @@ tfLimitCalc<-function(targetNum,distractorNum) {
   tfLimit1_2_3targets[targetNum] / (distractorNum+1)
 }
 #winT, the windowOfTracking
-winT = expand.grid( distractors = seq(1,11,1), targets = seq(1,3,1), limit=c("speed","tf") )
+boumaLaw = pi*4
+winT = expand.grid( distractors = seq(1,ceiling(pi*4),1), targets = seq(1,3,1), limit=c("speed","tf") )
 winT$thresh=-1
 for (target in c(1,2,3)) {
   distractrs = winT[ winT$targets==target & winT$limit=="tf", ]$distractors  
@@ -35,8 +36,14 @@ constrainingLimit<-function(targetNum,distractorNum) {
 calcPolygonXYs<-function(targets) {
   uniqDistractrs = unique(winT$distractors)
   tfLimitedDistractrs = uniqDistractrs[ uniqDistractrs>intersectionPoint[targets] ]
+  #cut off right end at crowding limit
+  numTfLimitedBeforeCrowdingCutoff = length(tfLimitedDistractrs)
+  tfLimitedDistractrs = tfLimitedDistractrs[ tfLimitedDistractrs < 4*pi ]
+  if (length(tfLimitedDistractrs) < numTfLimitedBeforeCrowdingCutoff) { #if was cut off by crowding limit
+    tfLimitedDistractrs[length(tfLimitedDistractrs)+1] = 4*pi #will only work if only one was cut off
+  }
   xs= c(min(uniqDistractrs),intersectionPoint[targets], tfLimitedDistractrs, #top edge of polygon
-        max(tfLimitedDistractrs), min(uniqDistractrs)) #bottom edge of polygon  
+        4*pi, min(uniqDistractrs)) #bottom edge of polygon  
   ys= unlist( lapply(xs[1:(length(xs)-2)],FUN=constrainingLimit,targetNum=targets) ) #top edge
   ys = c(ys,0,0) #adding bottom edge
   return (list(xs=xs,ys=ys))
@@ -58,13 +65,17 @@ g=ggplot(subset(winT,targets==1),
 g=g+geom_line(size=.75)
 g=g+scale_linetype_manual(values=c(2,3)) #make them both dashed, then make solid the lowest limit
 #g=g+scale_linetype_manual(values=c(2,2)) #make them both dashed, then make solid the lowest limit
-g=g+coord_cartesian(xlim=c(min(winT$distractors),max(winT$distractors)),ylim=c(0,max(winT$thresh)+.1))
+g=g+coord_cartesian(xlim=c(min(winT$distractors),ceiling(4*pi)+.2),
+                    ylim=c(0,max(winT$thresh)+.1))
+g=g+scale_x_continuous(breaks=seq(min(winT$distractors), floor(4*pi), 1))
 g=g+geom_polygon(data = positions, aes(x, y, targets), fill="pink", color="transparent", alpha=.7)
 g=g+annotate("text", x=6,y=1, label=paste(toString(tfLimit1_2_3targets[1]),"Hz"), angle=-15 )
 g=g+annotate("text", x=4,y=speedLimit1_2_3targets[1], 
              label=paste(toString(speedLimit1_2_3targets[1]),"rps") )
 g=g+annotate("text", x=2.5, y=1, label="trackable", fontface=3, alpha=.8) #italics
 g=g+ylab('speed threshold (rps)')
+g=g+geom_vline(xintercept=pi*4)
+g=g+annotate("text",x=pi*4+.3,y=1.1,label="crowded (Bouma rule)", size=4, angle=90)
 g=g+themeAxisTitleSpaceNoGridLinesLegendBox
 #g=g+facet_grid(targets~.) #facet_grid(targets~criterion)
 show(g)
@@ -135,6 +146,7 @@ g=g+annotate("text", x=3, y=0.4, label="3 targets", fontface=3, angle=-8,size=4)
 g=g+ylab('speed threshold (rps)')
 g=g+coord_cartesian(xlim=c(min(winT$distractors),14)) #crowding limit is 4*pi-1 distractors
 g=g+geom_vline(xintercept=pi*4)
+g=g+annotate("text",x=12,y=1.5,label="crowded", size=4, angle=90)
 g=g+themeAxisTitleSpaceNoGridLinesLegendBox
 #g=g+facet_grid(targets~.) #facet_grid(targets~criterion)
 show(g)
