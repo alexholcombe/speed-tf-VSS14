@@ -32,17 +32,22 @@ constrainingLimit<-function(targetNum,distractorNum) {
   else { return (tfLimitCalc(targetNum,distractorNum)) }
 }
 #create shading inside intersection of limits. 
-uniqDistractrs = unique(winT$distractors)
-tfLimitedDistractrs1target = uniqDistractrs[ uniqDistractrs>intersectionPoint[1] ]
-polygonXs = c(min(uniqDistractrs),intersectionPoint[1], tfLimitedDistractrs1target, #top edge of polygon
-              max(tfLimitedDistractrs1target), min(uniqDistractrs)) #bottom edge of polygon
-ysPolygonTop = unlist( lapply(polygonXs[1:(length(polygonXs)-2)],FUN=constrainingLimit,targetNum=1) )
+calcPolygonXYs<-function(targets) {
+  uniqDistractrs = unique(winT$distractors)
+  tfLimitedDistractrs = uniqDistractrs[ uniqDistractrs>intersectionPoint[targets] ]
+  xs= c(min(uniqDistractrs),intersectionPoint[targets], tfLimitedDistractrs, #top edge of polygon
+        max(tfLimitedDistractrs), min(uniqDistractrs)) #bottom edge of polygon  
+  ys= unlist( lapply(xs[1:(length(xs)-2)],FUN=constrainingLimit,targetNum=targets) ) #top edge
+  ys = c(ys,0,0) #adding bottom edge
+  return (list(xs=xs,ys=ys))
+}
+tst=calcPolygonXYs(1) #test the function
 
 positions <- data.frame( #vertices of the polygon
-  targets = rep(c(1), each = length(polygonXs)), #targetsID
+  targets = rep(c(1), each = length(calcPolygonXYs(1)$x)), #targetsID
   limit = "tf",
-  x= polygonXs,
-  y= c(ysPolygonTop,0,0)
+  x= calcPolygonXYs(1)$xs,
+  y= calcPolygonXYs(1)$ys
 )
 
 #Show 1-target limit only. As the first figure explaining the two limits and their intersection
@@ -63,6 +68,77 @@ g=g+ylab('speed threshold (rps)')
 g=g+themeAxisTitleSpaceNoGridLinesLegendBox
 #g=g+facet_grid(targets~.) #facet_grid(targets~criterion)
 show(g)
+
+OneTargXs = c( calcPolygonXYs(1)$xs[1], calcPolygonXYs(1)$xs) #make it longer by 1. Kludge because diff
+OneTargYs = c( calcPolygonXYs(1)$ys[1], calcPolygonXYs(1)$ys) #erent lengths
+
+positions <- data.frame( #vertices of the polygon
+  targets = rep(c(1,2,3), each = length(calcPolygonXYs(3)$xs)), #targetsID
+  limit = "tf",
+  x= c(OneTargXs, calcPolygonXYs(2)$xs, calcPolygonXYs(3)$xs),
+  y= c(OneTargYs, calcPolygonXYs(2)$ys, calcPolygonXYs(3)$ys)
+)
+
+#Show 1,2,3-target trackable regions 
+tit="windowOfTracking 1target"
+quartz(tit,width=6.4,height=3.5)
+g=ggplot(subset(winT,targets==1), 
+         aes( x=distractors,y=thresh, color=factor(targets), fill=factor(targets), linetype=factor(limit)) )
+g=g+geom_line(size=.75)
+g=g+scale_linetype_manual(values=c(2,3)) #make them both dashed, then make solid the lowest limit
+g=g+scale_fill_manual(values=c("pink","green","dodgerblue3")) #make them both dashed, then make solid the lowest limit
+g=g+coord_cartesian(xlim=c(min(winT$distractors),max(winT$distractors)),ylim=c(0,max(winT$thresh)+.1))
+g=g+geom_polygon(data = positions, aes(x, y, targets), alpha=.4)
+g=g+annotate("text", x=6,y=1, label=paste(toString(tfLimit1_2_3targets[1]),"Hz"), size=4, angle=-15 )
+g=g+annotate("text", x=6,y=.66, label=paste(toString(tfLimit1_2_3targets[2]),"Hz"), size=4, angle=-8 )
+g=g+annotate("text", x=6,y=.3, label=paste(toString(tfLimit1_2_3targets[3]),"Hz"), size=4, angle=-5 )
+g=g+annotate("text", x=4,y=speedLimit1_2_3targets[1], 
+             label=paste(toString(speedLimit1_2_3targets[1]),"rps"), size=4 )
+g+text(  x=1,y=speedLimit1_2_3targets[3], 
+         label=paste(toString(speedLimit1_2_3targets[3]),"rps") )
+g=g+annotate("text", x=1,y=speedLimit1_2_3targets[2], 
+             label=paste(toString(speedLimit1_2_3targets[2]),"rps"), size=4 )
+g=g+annotate("text", x=1,y=speedLimit1_2_3targets[3], 
+             label=paste(toString(speedLimit1_2_3targets[3]),"rps"), size=4 )
+g=g+annotate("text", x=3, y=1.4, label="1 target", fontface=3, angle=-30,size=4) #italics
+g=g+annotate("text", x=3, y=0.9, label="2 targets", fontface=3, angle=-20,size=4) #italics
+g=g+annotate("text", x=3, y=0.4, label="3 targets", fontface=3, angle=-8,size=4) #italics
+g=g+ylab('speed threshold (rps)')
+g=g+themeAxisTitleSpaceNoGridLinesLegendBox
+#g=g+facet_grid(targets~.) #facet_grid(targets~criterion)
+show(g)
+
+#Show 1,2,3-target trackable regions AND spatial crowding limit 
+tit="windowOfTracking 1target"
+quartz(tit,width=6.4,height=3.5)
+g=ggplot(subset(winT,targets==1), 
+         aes( x=distractors,y=thresh, color=factor(targets), fill=factor(targets), linetype=factor(limit)) )
+g=g+geom_line(size=.75)
+g=g+scale_linetype_manual(values=c(2,3)) #make them both dashed, then make solid the lowest limit
+g=g+scale_fill_manual(values=c("pink","green","dodgerblue3")) #make them both dashed, then make solid the lowest limit
+g=g+coord_cartesian(ylim=c(0,max(winT$thresh)+.1))
+g=g+geom_polygon(data = positions, aes(x, y, targets), alpha=.4)
+g=g+annotate("text", x=6,y=1, label=paste(toString(tfLimit1_2_3targets[1]),"Hz"), size=4, angle=-15 )
+g=g+annotate("text", x=6,y=.66, label=paste(toString(tfLimit1_2_3targets[2]),"Hz"), size=4, angle=-8 )
+g=g+annotate("text", x=6,y=.3, label=paste(toString(tfLimit1_2_3targets[3]),"Hz"), size=4, angle=-5 )
+g=g+annotate("text", x=4,y=speedLimit1_2_3targets[1], 
+             label=paste(toString(speedLimit1_2_3targets[1]),"rps"), size=4 )
+g+text(  x=1,y=speedLimit1_2_3targets[3], 
+         label=paste(toString(speedLimit1_2_3targets[3]),"rps") )
+g=g+annotate("text", x=1,y=speedLimit1_2_3targets[2], 
+             label=paste(toString(speedLimit1_2_3targets[2]),"rps"), size=4 )
+g=g+annotate("text", x=1,y=speedLimit1_2_3targets[3], 
+             label=paste(toString(speedLimit1_2_3targets[3]),"rps"), size=4 )
+g=g+annotate("text", x=3, y=1.4, label="1 target", fontface=3, angle=-30,size=4) #italics
+g=g+annotate("text", x=3, y=0.9, label="2 targets", fontface=3, angle=-20,size=4) #italics
+g=g+annotate("text", x=3, y=0.4, label="3 targets", fontface=3, angle=-8,size=4) #italics
+g=g+ylab('speed threshold (rps)')
+g=g+coord_cartesian(xlim=c(min(winT$distractors),14)) #crowding limit is 4*pi-1 distractors
+g=g+geom_vline(xintercept=pi*4)
+g=g+themeAxisTitleSpaceNoGridLinesLegendBox
+#g=g+facet_grid(targets~.) #facet_grid(targets~criterion)
+show(g)
+
 
 #Show 1, 2, and 3 targets trackable regions. As Russian dolls
 tit="windowOfTracking 1target"
