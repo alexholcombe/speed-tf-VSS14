@@ -1,4 +1,4 @@
-#Variables expected
+#Variables expected:
 #dat
 #iv - "tf" or "speed"
 if (!("speed" %in% colnames(psychometrics))) { #psychometrics must have been fit to tf
@@ -30,17 +30,17 @@ plotIndividDataAndCurves <- function(df,psychometricCurves) {
   g		
 }
 
-for (expNum in seq(1,1)) {  #draw individual Ss' data, for each experiment
-  title<-paste('E',expNum,' individual Ss data',sep='')
+for ( expThis in sort(unique(dat$exp)) ) {  #draw individual Ss' data, for each experiment
+  title<-paste('E',expThis,' individual Ss data',sep='')
   quartz(title,width=10,height=7)
-  thisExpDat <- subset(dat,exp==expNum)
+  thisExpDat <- subset(dat,exp==expThis)
   g=ggplot(data= thisExpDat,aes(x=speed,y=correct,color=factor(numTargets),shape=factor(numObjects)))
   g=g+stat_summary(fun.y=mean,geom="point", position=position_jitter(w=0.04,h=0),alpha=.95)
   g=g+facet_grid(numObjects ~ subject)+theme_bw()
   #g<-g+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
-  g
+  show(g)
   #draw individual psychometric functions, for only one experiment  
-  thisPsychometrics <- subset(psychometrics,exp==expNum)
+  thisPsychometrics <- subset(psychometrics,exp==expThis)
   g=g+geom_line(data=thisPsychometrics)
   g=g+ geom_hline(mapping=aes(yintercept=chanceRate),lty=2)  #draw horizontal line for chance performance
   g=g+xlab('Speed (rps)')+ylab('Proportion Correct')
@@ -49,5 +49,5 @@ for (expNum in seq(1,1)) {  #draw individual Ss' data, for each experiment
   g<-g+ scale_x_continuous(breaks=c(0.5,1.0,1.5,2.0,2.5),labels=c("0.5","","1.5","","2.5"))
   #g<-g+ scale_x_continuous(breaks=speeds)
   show(g)
-  ggsave( paste('figs/individPlotsE',expNum,'.png',sep='')  )
+  ggsave( paste('figs/individPlotsE',expThis,'.png',sep='')  )
 }

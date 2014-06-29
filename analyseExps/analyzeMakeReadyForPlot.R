@@ -1,11 +1,9 @@
-#source('helpers/psychometricGgplotHelpRobust3.R') #load my custom version of binomfit_lims
-source('helpers/psychometricHelpRobust6.R') #load my custom version of binomfit_lims
-#Variables expected:
+#Variables this file expects to be in the global workspace:
 #iv - "tf" or "speed"
 #dat - raw data (anonymized)
+source('helpers/psychometricHelpRobust6.R') #load my custom version of binomfit_lims
 
-expNum<-1
-varyLapseRate = TRUE
+varyLapseRate = FALSE
 #global variables needed by psychometricGgplotHelpRobust.R
 if (varyLapseRate) { lapseMinMax= c(0,0.05) }  else  #range of lapseRates to try for best fit
 	{ lapseMinMax = c(0.01,0.01) }
@@ -43,7 +41,6 @@ getFitParmsPrintProgress <- function(df) {  #So I can see which fits yielded a w
 dat$subject <- factor(dat$subject)
 
 #tempDat<- subset(dat,numObjects==2 & numTargets==1 & subject=="AH" ) #Does this well now, using penalized.deviance to compare across lapse rates
-
 fitParms <- ddply(dat, factorsPlusSubject, getFitParmsPrintProgress)
 #To-do. Change psychometrics myCurve to accommodate rescaling based on method
 #       Stop setting global variables
@@ -57,14 +54,9 @@ fitParms$chanceRate <- 1/fitParms$numObjects
 #use the fitted parameters to get the actual curves
 myPlotCurve <- makeMyPlotCurve4(iv,xLims[1],xLims[2]+.5,numPointsForPsychometricCurve)
 #ddply(fitParms,factorsPlusSubject,function(df) { if (nrow(df)>1) {print(df); STOP} })  #debugOFF
-
 psychometrics<-ddply(fitParms,factorsPlusSubject,myPlotCurve)  
 
-
 #Below are just helper functions. Consider migration into a helper function file
-
-
-
 
 #Usually ggplot with stat_summary will collapse the data into means, but for some plots and analyses can't do it that way.
 #Therefore calculate the means
@@ -77,13 +69,13 @@ calcMeans<-function(df) {
   df= data.frame(pCorr)
   return(df)
 }  
-
 factorsPlusSubjectAndIv <- factorsPlusSubject
 factorsPlusSubjectAndIv[ length(factorsPlusSubjectAndIv)+1 ] <- iv
 datMeans<- ddply(dat,factorsPlusSubjectAndIv,calcMeans)
 
 calcPctCorrThisIvVal <- function(df,iv,val) {
-  #Expects a data.frame for a particular condition (only one row tests this speed, or none and must interpolate)
+  #Take dataframe with fitted psychometric function, 
+  #where only one row tests this iv val, or none and must interpolate
   thisValIdx<- which(df[,iv]==val)
   if (length(thisValIdx) > 1) {
     stop('calcPctCorrThisSpeed passed a dataframe with more than one instance of speed s')
