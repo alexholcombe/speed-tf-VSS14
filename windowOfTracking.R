@@ -12,8 +12,11 @@ tfLimitCalc<-function(targetNum,distractorNum) {
   tfLimit1_2_3targets[targetNum] / (distractorNum+1)
 }
 #winT, the windowOfTracking
-boumaLaw = pi*4
-winT = expand.grid( distractors = seq(1,ceiling(pi*4),1), targets = seq(1,3,1), limit=c("speed","tf") )
+bouma = pi*4-1
+motionPerceptnHzLimit = 25 #according to Verstraten et al. 2000
+
+
+winT = expand.grid( distractors = seq(1,ceiling(bouma),1), targets = seq(1,3,1), limit=c("speed","tf") )
 winT$thresh=-1
 for (target in c(1,2,3)) {
   distractrs = winT[ winT$targets==target & winT$limit=="tf", ]$distractors  
@@ -38,12 +41,12 @@ calcPolygonXYs<-function(targets) {
   tfLimitedDistractrs = uniqDistractrs[ uniqDistractrs>intersectionPoint[targets] ]
   #cut off right end at crowding limit
   numTfLimitedBeforeCrowdingCutoff = length(tfLimitedDistractrs)
-  tfLimitedDistractrs = tfLimitedDistractrs[ tfLimitedDistractrs < 4*pi ]
+  tfLimitedDistractrs = tfLimitedDistractrs[ tfLimitedDistractrs < bouma ]
   if (length(tfLimitedDistractrs) < numTfLimitedBeforeCrowdingCutoff) { #if was cut off by crowding limit
-    tfLimitedDistractrs[length(tfLimitedDistractrs)+1] = 4*pi #will only work if only one was cut off
+    tfLimitedDistractrs[length(tfLimitedDistractrs)+1] = bouma #will only work if only one was cut off
   }
   xs= c(min(uniqDistractrs),intersectionPoint[targets], tfLimitedDistractrs, #top edge of polygon
-        4*pi, min(uniqDistractrs)) #bottom edge of polygon  
+        bouma, min(uniqDistractrs)) #bottom edge of polygon  
   ys= unlist( lapply(xs[1:(length(xs)-2)],FUN=constrainingLimit,targetNum=targets) ) #top edge
   ys = c(ys,0,0) #adding bottom edge
   return (list(xs=xs,ys=ys))
@@ -57,28 +60,35 @@ positions <- data.frame( #vertices of the polygon
   y= calcPolygonXYs(1)$ys
 )
 
-#Show 1-target limit only. As the first figure explaining the two limits and their intersection
-tit="windowOfTracking 1target"
+#Show motion perception limit and 1-target limit. 
+tit="windowOfTracking_1target_motionPerceptionLimit"
 quartz(tit,width=6.4,height=3.5)
 g=ggplot(subset(winT,targets==1), 
          aes( x=distractors,y=thresh, color=factor(targets), linetype=factor(limit)) )
 g=g+geom_line(size=.75)
 g=g+scale_linetype_manual(values=c(2,3)) #make them both dashed, then make solid the lowest limit
 #g=g+scale_linetype_manual(values=c(2,2)) #make them both dashed, then make solid the lowest limit
-g=g+coord_cartesian(xlim=c(min(winT$distractors),ceiling(4*pi)+.2),
-                    ylim=c(0,max(winT$thresh)+.1))
-g=g+scale_x_continuous(breaks=seq(min(winT$distractors), floor(4*pi), 1))
+
+g=g+scale_x_continuous(breaks=seq(min(winT$distractors), floor(bouma), 1))
 g=g+geom_polygon(data = positions, aes(x, y, targets), fill="pink", color="transparent", alpha=.7)
-g=g+annotate("text", x=6,y=1, label=paste(toString(tfLimit1_2_3targets[1]),"Hz"), angle=-15 )
+g=g+annotate("text",x=6,y=1,label=paste(toString(tfLimit1_2_3targets[1]),"Hz"), angle=-6,size=4 )
 g=g+annotate("text", x=4,y=speedLimit1_2_3targets[1], 
-             label=paste(toString(speedLimit1_2_3targets[1]),"rps") )
-g=g+annotate("text", x=2.5, y=1, label="trackable", fontface=3, alpha=.8) #italics
+             label=paste(toString(speedLimit1_2_3targets[1]),"rps"), size=4)
+g=g+annotate("text", x=2.5, y=.8, label="trackable", fontface=3, alpha=.8) #italics
+g=g+coord_cartesian(xlim=c(min(winT$distractors),max(winT$distractors)),
+                    ylim=c(0,max(motionPerceptnHzLimit/(winT$distractors+1))))
 g=g+ylab('speed threshold (rps)')
-g=g+geom_vline(xintercept=pi*4)
-g=g+annotate("text",x=pi*4+.3,y=1.1,label="crowded (Bouma rule)", size=4, angle=90)
+g=g+geom_vline(xintercept=bouma,color="grey",size=1.5)
+g=g+annotate("text",x=bouma+.25,y=4,label="crowded (Bouma rule)", color="black", size=4, angle=90)
+g=g+geom_line(data=data.frame(x=winT$distractors,
+                               y=motionPerceptnHzLimit/(winT$distractors+1), limit="tf"), 
+                               aes(x,y),color="grey",linetype=1, size=1.5)
+g=g+annotate("text",x=3,y=motionPerceptnHzLimit/4.3,label="motion perception", color="black", size=4, angle=-55)
+g=g+annotate("text",x=6,y=3.6,label=paste(toString(motionPerceptnHzLimit),"Hz"), angle=-22,size=4 )
 g=g+themeAxisTitleSpaceNoGridLinesLegendBox
-#g=g+facet_grid(targets~.) #facet_grid(targets~criterion)
 show(g)
+ggsave( paste('figs/windowOfTracking',tit,'.png',sep=''), bg="transparent")
+
 
 OneTargXs = c( calcPolygonXYs(1)$xs[1], calcPolygonXYs(1)$xs) #make it longer by 1. Kludge because diff
 OneTargYs = c( calcPolygonXYs(1)$ys[1], calcPolygonXYs(1)$ys) #erent lengths
@@ -120,37 +130,39 @@ g=g+themeAxisTitleSpaceNoGridLinesLegendBox
 show(g)
 
 #Show 1,2,3-target trackable regions AND spatial crowding limit 
-tit="windowOfTracking 1target"
+tit="windowOfTracking"
 quartz(tit,width=6.4,height=3.5)
 g=ggplot(subset(winT,targets==1), 
          aes( x=distractors,y=thresh, color=factor(targets), fill=factor(targets), linetype=factor(limit)) )
 g=g+geom_line(size=.75)
 g=g+scale_linetype_manual(values=c(2,3)) #make them both dashed, then make solid the lowest limit
 g=g+scale_fill_manual(values=c("pink","green","dodgerblue3")) #make them both dashed, then make solid the lowest limit
-g=g+coord_cartesian(ylim=c(0,max(winT$thresh)+.1))
 g=g+geom_polygon(data = positions, aes(x, y, targets), alpha=.4)
 g=g+annotate("text", x=6,y=1, label=paste(toString(tfLimit1_2_3targets[1]),"Hz"), size=4, angle=-15 )
-g=g+annotate("text", x=6,y=.66, label=paste(toString(tfLimit1_2_3targets[2]),"Hz"), size=4, angle=-8 )
-g=g+annotate("text", x=6,y=.3, label=paste(toString(tfLimit1_2_3targets[3]),"Hz"), size=4, angle=-5 )
+g=g+annotate("text", x=6,y=.6, label=paste(toString(tfLimit1_2_3targets[2]),"Hz"), size=4, angle=-8 )
+g=g+annotate("text", x=6,y=.34, label=paste(toString(tfLimit1_2_3targets[3]),"Hz"), size=4, angle=-5 )
 g=g+annotate("text", x=4,y=speedLimit1_2_3targets[1], 
              label=paste(toString(speedLimit1_2_3targets[1]),"rps"), size=4 )
-g+text(  x=1,y=speedLimit1_2_3targets[3], 
-         label=paste(toString(speedLimit1_2_3targets[3]),"rps") )
-g=g+annotate("text", x=1,y=speedLimit1_2_3targets[2], 
-             label=paste(toString(speedLimit1_2_3targets[2]),"rps"), size=4 )
-g=g+annotate("text", x=1,y=speedLimit1_2_3targets[3], 
-             label=paste(toString(speedLimit1_2_3targets[3]),"rps"), size=4 )
+#I don't know how to make text, e.g. 1.9 rps extend over axis boundary
+# g=g+annotate("text", x=1,y=speedLimit1_2_3targets[2], 
+#              label=paste(toString(speedLimit1_2_3targets[2]),"rps"), size=4 )
+# g=g+annotate("text", x=1,y=speedLimit1_2_3targets[3], 
+#              label=paste(toString(speedLimit1_2_3targets[3]),"rps"), size=4 )
 g=g+annotate("text", x=3, y=1.4, label="1 target", fontface=3, angle=-30,size=4) #italics
 g=g+annotate("text", x=3, y=0.9, label="2 targets", fontface=3, angle=-20,size=4) #italics
 g=g+annotate("text", x=3, y=0.4, label="3 targets", fontface=3, angle=-8,size=4) #italics
 g=g+ylab('speed threshold (rps)')
-g=g+coord_cartesian(xlim=c(min(winT$distractors),14)) #crowding limit is 4*pi-1 distractors
-g=g+geom_vline(xintercept=pi*4)
-g=g+annotate("text",x=12,y=1.5,label="crowded", size=4, angle=90)
+#crowding limit is 4*pi-1 distractors
+g=g+coord_cartesian(xlim=c(min(winT$distractors),ceiling(bouma)+.2),
+                    ylim=c(0,max(winT$thresh)+.1))
+g=g+geom_vline(xintercept=bouma,color="grey")
+g=g+annotate("text",x=bouma+.3,y=1.35,label="crowded (Bouma rule)", size=4, angle=90)
 g=g+themeAxisTitleSpaceNoGridLinesLegendBox
 #g=g+facet_grid(targets~.) #facet_grid(targets~criterion)
 show(g)
 
+g+text(  x=1,y=speedLimit1_2_3targets[3], 
+         label=paste(toString(speedLimit1_2_3targets[3]),"rps") )
 
 #Show 1, 2, and 3 targets trackable regions. As Russian dolls
 tit="windowOfTracking 1target"
