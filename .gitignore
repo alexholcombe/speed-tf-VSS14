@@ -1,11 +1,10 @@
+.DS*
 .Rproj.user
 .Rhistory
 .RData
-.gitignore
 figs/
 analyseExps/rawdata123targets269objects/
 analyseExps/figs/
 analyseExps/old/
 "threshes_speedSave alias"
 "threshes_tfSave alias"
-.DS_Store
