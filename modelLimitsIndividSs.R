@@ -439,7 +439,6 @@ g=g %+% subset(psychometrics,subject=="mean" & targets==1)
 ggsave( paste('figs/',tit,'.png',sep=''), bg="transparent")
 
 
-
 #Check for discrepancies ######################################################## 
 #Check thresholds gotten originally for 1target2objs matches new limits found by
 #generating psychometric function from params then extracting thresholds

@@ -1,6 +1,7 @@
-#Variables this file expects to be in the global workspace:
-#iv - "tf" or "speed"
-#dat - raw data (anonymized)
+setwd("/Users/alexh/Documents/attention_tempresltn/multiple\ object\ tracking/ChrisFajouHonours/analyzeData/fitPsychometricCurves")
+iv='speed'
+load("data/experiment2.RData",verbose=TRUE) #E1 #returns dat
+
 source('helpers/psychometricHelpRobust6.R') #load my custom version of binomfit_lims
 
 varyLapseRate = FALSE
@@ -8,7 +9,7 @@ varyLapseRate = FALSE
 if (varyLapseRate) { lapseMinMax= c(0,0.05) }  else  #range of lapseRates to try for best fit
 	{ lapseMinMax = c(0.01,0.01) }
 chanceRate=.5
-factorsForBreakdown = c('exp','numObjects','numTargets')
+factorsForBreakdown = c('exp','ringToPostCue','whichRingSecondTarget')
 xLims=c(.04,4);  if (iv=="tf") {xLims=c(.5,8)}
 yLims=c(.3,1.05)
 numPointsForPsychometricCurve=150 #250
@@ -47,10 +48,6 @@ fitParms <- ddply(dat, factorsPlusSubject, getFitParmsPrintProgress)
 #     Figure out way to pass method thgough to binomfit_limsAlex
 
 #prediction tracking two if only can track one. myPlotCurve then calculates it.
-capacityOneParms <- subset(fitParms, numTargets %in% c(1))
-capacityOneParms$numTargets <- "2P"
-fitParms<-rbind(fitParms,capacityOneParms)
-fitParms$chanceRate <- 1/fitParms$numObjects
 #use the fitted parameters to get the actual curves
 myPlotCurve <- makeMyPlotCurve4(iv,xLims[1],xLims[2]+.5,numPointsForPsychometricCurve)
 #ddply(fitParms,factorsPlusSubject,function(df) { if (nrow(df)>1) {print(df); STOP} })  #debugOFF
@@ -107,18 +104,3 @@ stopifnot(exists("fitParms"))
 stopifnot(exists("psychometrics"))
 stopifnot(exists("datMeans"))
 stopifnot(exists("calcPctCorrThisIvVal"))
-
-#psychometrics= subset(psychometrics, numTargets==1 & numObjects==2 & subject=="FHL") #slopeThisCrit -1.99, thresh=1.96 #debugOFF
-# tit<-'DEBUG'
-# quartz(tit,width=4,height=4)
-# g=ggplot(data=psychometrics,
-#          aes(x=speed,y=correct,shape=subject)) 
-# g=g+geom_point()+theme_bw()
-# g=g+geom_line()
-# g=g+ylab('Proportion Correct')
-# g=g+xlab('Speed (rps)') 
-# g=g+ggtitle('overlap much greater for 3-object case')
-# show(g)
-# ggsave( paste('figs/',tit,'.png',sep='') )
-
-#Plotting of data and psychometric functions now in different file- plotIndividDataWithPsychometricCurves

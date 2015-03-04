@@ -67,7 +67,7 @@ themeAxisTitleSpaceNoGridLinesLegendBox = theme_classic() + #Remove gridlines, s
         panel.background = element_rect(fill = "transparent",colour = NA),
         plot.background = element_rect(fill = "transparent",colour = NA)   )
 ##########Plot threshes, exp*subject*numTargets*numObjects ################
-tit=paste("individual Ss threshesSpeed ",infoMsg," threeQuarterThresh")) 
+tit=paste("individual Ss threshesSpeed ",infoMsg," threeQuarterThresh")
 dv="speed"
 quartz(title=tit,width=4,height=3) #create graph of thresholds
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
@@ -82,7 +82,7 @@ if (iv=="speed") h<-h+ggtitle("6,9 difft validates t.f. limit. Speed limits vary
 show(h)
 ggsave( paste('figs/E1_EpostVSStargets/',tit,'.png',sep='') )
 #############################################Plot mean speed threshes against numTargets
-tit<-paste0("SpeedMeanThreshAgainstTargets ",infoMsg," threeQuarterThresh"))  
+tit<-paste0("SpeedMeanThreshAgainstTargets ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=4,height=3) 
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
           aes(x=numTargets,y=thresh,color=factor(numObjects)))
@@ -101,7 +101,7 @@ h<-h+ggtitle(paste("6,9 difft validates t.f. limit. Speed limits vary widely",la
 show(h)
 ggsave( paste('figs/E1_EpostVSStargets/',tit,'.png',sep='') )
 #############################################Plot mean speed threshes against distractors
-tit<-paste0('SpeedMeanThreshAgainstDistractors ",infoMsg," threeQuarterThresh"))  
+tit<-paste0('SpeedMeanThreshAgainstDistractors ',infoMsg,' threeQuarterThresh') 
 quartz(title=tit,width=4,height=3) #create graph of threshes
 threshes$numObjects <- as.numeric(threshes$numObjects) #Otherwise can't connect with lines
 threshes$targets <- threshes$numTargets #Otherwise can't connect with lines
@@ -129,7 +129,7 @@ ggsave( paste('figs/E1_EpostVSStargets/',tit,'.png',sep=''),bg="transparent" ) #
 threshes$temporalFreq <- threshes$thresh*threshes$numObjects
 #p2 <- aes(x=numObjects-1,y=temporalFreq,color=targets); h %+% p2 #quick t.f. plot
 ### Pattern remarkably consistent across Ss, perhaps show in paper?
-tit=paste0("individualSsTemporalFreq ",infoMsg," threeQuarterThresh"))
+tit=paste0("individualSsTemporalFreq ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=5,height=3.5) #create graph of thresholds
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
           aes(x=numTargets,y=temporalFreq,color=factor(numObjects)))
@@ -144,7 +144,7 @@ show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-tr
 ggsave( paste('figs/E1_EpostVSStargets/',tit,'.png',sep=''),bg="transparent" ) #bg option will be passed to png
 h %+% subset(threshes,criterionNote=="threeQuarters")
 ##########################################tf mean threshes against targets
-tit=paste0("tfMeanThreshAgainstTargets ",infoMsg," threeQuarterThresh"))
+tit=paste0("tfMeanThreshAgainstTargets ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=4,height=3)
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
@@ -184,7 +184,7 @@ h<-h+ggtitle(paste(tit,lapseMsg))
 show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
 ggsave( paste('figs/E1_EpostVSSdistractors/',tit,'.png',sep=''),bg="transparent" ) #bg option will be passed to png
 ##########################################tf individual Ss against distractors
-tit=paste0("tfSsAgainstDistractors ",infoMsg," threeQuarterThresh"))
+tit=paste0("tfSsAgainstDistractors ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=4,height=3) 
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
