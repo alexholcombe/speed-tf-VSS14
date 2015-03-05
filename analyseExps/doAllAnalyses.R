@@ -1,14 +1,18 @@
 #This file analyses anonymized data provided by "loadAnonymiseSaveData.R" in exp-specific directory
 #Working directory is set hopefully by Rproj file to directory that it's in.
-#"/Users/alexh/Documents/attention_tempresltn/multiple\ object\ tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/speed-tf-VSS14"
+setwd("/Users/alexh/Documents/attention_tempresltn/multiple\ object\ tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/speed-tf-VSS14/analyseExps")
 
-expName="123targets269objects" 
-load("data/data123targets269objects.RData",verbose=TRUE) #E1 #returns dat
+expName="123targets269objects"
+dataDir="../data/"
+expName = "data123targets269objects"
+anonDataFilename = paste(dataDir,expName,".Rdata",sep="") 
+load(anonDataFilename,verbose=TRUE) #E1 #returns dat
+dat$expName = expName
 datE1 = dat
 expName="postVSS_13targets2349objects" 
-anonymisedDataFname= paste("data/",expName,".Rdata",sep="") #data/postVSS_13targets2349objects.RData
-load(anonymisedDataFname,verbose=TRUE) #returns dat
-
+anonDataFname= paste(dataDir,expName,".Rdata",sep="") #data/postVSS_13targets2349objects.RData
+load(anonDataFname,verbose=TRUE) #returns dat
+dat$expName = expName
 colsNotInE1 = setdiff(colnames(dat),colnames(datE1))
 datE1[,colsNotInE1] = -999 #dummy value
 colsNotInThisOne = setdiff(colnames(datE1),colnames(dat))
@@ -17,9 +21,9 @@ dat = rbind(dat,datE1)
 
 dat$tf = dat$speed*dat$numObjects
 for (iv in c("speed","tf")) {
-  source('analyseExps/analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
+  source('analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
   if (iv=="speed") { #if not, don't bother
-    source('analyseExps/plotIndividDataWithPsychometricCurves.R')
+    source('plotIndividDataWithPsychometricCurves.R')
   }
   #should also do it normalizing by subjects' speed limits
   source("analyseExps/extractThreshesAndPlot.R") #provides threshes, plots
@@ -27,7 +31,6 @@ for (iv in c("speed","tf")) {
   varName=paste("threshes_",iv,"_",expName,sep='') #combine threshes
   assign(varName,threshes)
   save(list=varName,file=paste("data/",varName,".Rdata",sep='')) #e.g. threshes_tf_123targets269objects.Rdata
-
 }
 #source ( model limits) ??
 

@@ -6,7 +6,7 @@ if (!("speed" %in% colnames(psychometrics))) { #psychometrics must have been fit
   psychometrics$speed = psychometrics$tf / psychometrics$numObjects #because always plot them in terms of speed
 }
 
-#maybe write a function that plots the psychometric functions for a dataset / experiment /criterion,
+#function, not used, that plots the psychometric functions for a dataset / experiment /criterion,
 plotIndividDataAndCurves <- function(df,psychometricCurves) {
   #draw individual psychometric functions
   g=ggplot(data= df,aes(x=speed,y=correct,color=factor(numTargets),shape=factor(separatnDeg)))

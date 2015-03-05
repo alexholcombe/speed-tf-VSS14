@@ -1,7 +1,4 @@
-setwd("/Users/alexh/Documents/attention_tempresltn/multiple\ object\ tracking/ChrisFajouHonours/analyzeData/fitPsychometricCurves")
-iv='speed'
-load("data/experiment2.RData",verbose=TRUE) #E1 #returns dat
-
+#expects iv, dat
 source('helpers/psychometricHelpRobust6.R') #load my custom version of binomfit_lims
 
 varyLapseRate = FALSE
@@ -9,7 +6,7 @@ varyLapseRate = FALSE
 if (varyLapseRate) { lapseMinMax= c(0,0.05) }  else  #range of lapseRates to try for best fit
 	{ lapseMinMax = c(0.01,0.01) }
 chanceRate=.5
-factorsForBreakdown = c('exp','ringToPostCue','whichRingSecondTarget')
+factorsForBreakdown = c('exp','numObjects','numTargets')
 xLims=c(.04,4);  if (iv=="tf") {xLims=c(.5,8)}
 yLims=c(.3,1.05)
 numPointsForPsychometricCurve=150 #250
@@ -54,7 +51,6 @@ myPlotCurve <- makeMyPlotCurve4(iv,xLims[1],xLims[2]+.5,numPointsForPsychometric
 psychometrics<-ddply(fitParms,factorsPlusSubject,myPlotCurve)  
 
 #Below are just helper functions. Consider migration into a helper function file
-
 #Usually ggplot with stat_summary will collapse the data into means, but for some plots and analyses can't do it that way.
 #Therefore calculate the means
 calcMeans<-function(df) {
