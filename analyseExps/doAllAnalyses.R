@@ -21,6 +21,7 @@ dat = rbind(dat,datE1)
 
 dat$tf = dat$speed*dat$numObjects
 for (iv in c("speed","tf")) {
+  cat('Fitting data, extracting threshes, plotting with iv=',iv)
   source('analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
   if (iv=="speed") { #if not, don't bother
     source('plotIndividDataWithPsychometricCurves.R')
