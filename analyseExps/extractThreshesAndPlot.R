@@ -208,11 +208,7 @@ h<-h+ geom_line()
 h<-h+ggtitle(paste("individ Ss all show speed-limited for few distractrs, not much flattening by 3 targets",lapseMsg))
 show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
 ggsave( paste('figs/E1_EpostVSSdistractors/',tit,'.png',sep=''),bg="transparent" ) #bg option will be passed to png
-
-#MAKE SURE I got the slopes. I'm still getting insanely large slopes. Can I fit with something else?!
-#WYC 2 targets 2 objects has particularly high slopes
-###########################################################
-#Disprove Franconeri by making the theory he's talking about. But that also seems to require reasonable slopes
+##########################################################
 
 cat('I give you threshes')
 ###################################

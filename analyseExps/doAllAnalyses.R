@@ -32,7 +32,6 @@ for (iv in c("speed","tf")) {
   assign(varName,threshes)
   save(list=varName,file=paste(dataDir,varName,".Rdata",sep='')) #e.g. threshes_tf_123targets269objects.Rdata
 }
-#source ( model limits) ??
 
 #CRT_spinzter experiment#######################################################################
 load("data/E2_CRT_spinzter.RData",verbose=TRUE) #E2
@@ -64,3 +63,7 @@ g<-g+ theme(axis.title.y=element_text(vjust=0.22))
 g<-g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
 show(g)
 ggsave( paste('figs/',tit,'.png',sep='') )
+
+#source ( model limits) ??
+#source analyseSlopes?
+
