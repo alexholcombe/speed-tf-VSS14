@@ -1,10 +1,17 @@
 .DS*
+figs/
+#contains data and anonymisation algorithm
+analyseExps/experiment2_methodAdjust/
+#contains data and anonymisation algorithm
+analyseExps/experiment3_leading_abandoned/
+#contains data and anonymisation algorithm
+analyseExps/postVSS_13targets2349objects/
 .Rproj.user
 .Rhistory
 .RData
-figs/
-analyseExps/rawdata123targets269objects/
 analyseExps/figs/
 analyseExps/old/
+analyseExps/rawdata123targets269objects/
+analyseExps/experiment3_leading_abandoned/ 
 "threshes_speedSave alias"
 "threshes_tfSave alias"
