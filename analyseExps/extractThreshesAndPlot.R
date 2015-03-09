@@ -135,7 +135,7 @@ tit=paste0("individualSsTemporalFreq ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=6,height=3)
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=numTargets,y=temporalFreq,color=factor(numObjects)))
+          aes(x=numTargets,y=tfThresh,color=factor(numObjects)))
 h<-h+facet_grid(. ~ exp)  #facet_grid(criterion ~ exp)
 h<-h+ylab('threshold tf (Hz)')
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
@@ -155,7 +155,7 @@ tit=paste0("tfMeanThreshAgainstTargets ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=6,height=3)
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=targets,y=temporalFreq,color=factor(numObjects)))
+          aes(x=targets,y=tfThresh,color=factor(numObjects)))
 h<-h+facet_grid(. ~ exp)  #facet_grid(criterion ~ exp)
 h<-h+ylab('threshold tf (Hz)')
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
@@ -173,7 +173,7 @@ tit=paste0("tfMeanThreshAgainstDistractors ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=4,height=3) 
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=numObjects-1,y=temporalFreq))#,color=targets)) #color=targets gives error I don't know why
+          aes(x=numObjects-1,y=tfThresh))#,color=targets)) #color=targets gives error I don't know why
 h<-h+facet_grid(exp ~ targets)  #facet_grid(criterion ~ exp)
 h<-h+ylab('threshold tf (Hz)')
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
@@ -194,7 +194,7 @@ tit=paste0("tfSsAgainstDistractors ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=6,height=3) 
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=numObjects-1,y=temporalFreq,color=subject)) #color=targets,
+          aes(x=numObjects-1,y=tfThresh,color=subject)) #color=targets,
 h<-h+facet_grid(exp~targets)  #facet_grid(criterion ~ exp)
 h<-h+ylab('threshold tf (Hz)')
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox

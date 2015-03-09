@@ -35,7 +35,7 @@ for (iv in c("speed","tf")) {
 }
 
 #CRT_spinzter experiment#######################################################################
-load("data/E2_CRT_spinzter.RData",verbose=TRUE) #E2
+load( paste0(dataDir,"E2_CRT_spinzter.RData"),verbose=TRUE) #E2
 E2<-dat
 #For CRT data, I need to take mean across trials. Spinzter already is
 meanThreshold<-function(df) {  

@@ -1,4 +1,5 @@
 .DS*
+analyseExps/.DS_Store
 figs/
 #contains data and anonymisation algorithm
 analyseExps/experiment2_methodAdjust/
@@ -9,7 +10,7 @@ analyseExps/postVSS_13targets2349objects/
 .Rproj.user
 .Rhistory
 .RData
-.Rapp.Rhistory
+.Rapp.history
 analyseExps/figs/
 analyseExps/old/
 analyseExps/rawdata123targets269objects/
