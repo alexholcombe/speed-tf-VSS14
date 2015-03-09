@@ -26,15 +26,15 @@ for (iv in c("speed","tf")) {
     source('plotIndividDataWithPsychometricCurves.R')
   }
   #should also do it normalizing by subjects' speed limits
-  source("analyseExps/extractThreshesAndPlot.R") #provides threshes, plots
+  source("extractThreshesAndPlot.R") #provides threshes, thresh plots
 
   varName=paste("threshes_",iv,"_",expName,sep='') #combine threshes
   assign(varName,threshes)
-  save(list=varName,file=paste("data/",varName,".Rdata",sep='')) #e.g. threshes_tf_123targets269objects.Rdata
+  save(list=varName,file=paste(dataDir,varName,".Rdata",sep='')) #e.g. threshes_tf_123targets269objects.Rdata
 }
 #source ( model limits) ??
 
-#E2 #######################################################################
+#CRT_spinzter experiment#######################################################################
 load("data/E2_CRT_spinzter.RData",verbose=TRUE) #E2
 E2<-dat
 #For CRT data, I need to take mean across trials. Spinzter already is

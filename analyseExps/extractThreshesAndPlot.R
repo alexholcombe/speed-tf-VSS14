@@ -67,9 +67,9 @@ themeAxisTitleSpaceNoGridLinesLegendBox = theme_classic() + #Remove gridlines, s
         panel.background = element_rect(fill = "transparent",colour = NA),
         plot.background = element_rect(fill = "transparent",colour = NA)   )
 ##########Plot threshes, exp*subject*numTargets*numObjects ################
-tit=paste("individual Ss threshesSpeed ",infoMsg," threeQuarterThresh")
+tit=paste("individual_Ss_threshesSpeed_",infoMsg,"_threeQuarterThresh",sep='')
 dv="speed"
-quartz(title=tit,width=4,height=3) #create graph of thresholds
+quartz(title=tit,width=6,height=3) #create graph of thresholds
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
           aes(x=numTargets,y=thresh,color=factor(numObjects)))
 h<-h+facet_grid(. ~ exp)  #facet_grid(criterion ~ exp)
@@ -78,9 +78,10 @@ h<-h+themeAxisTitleSpaceNoGridLinesLegendBox #theme_bw()
 #h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
 h<-h+ geom_point() + geom_line(aes(group=interaction(subject,numObjects))) #plot individual lines for each subject
 h<-h+ylab(  paste('threshold ',iv,' (',ifelse(dv=="speed","rps","Hz"),')',sep='') )  
-if (iv=="speed") h<-h+ggtitle("6,9 difft validates t.f. limit. Speed limits vary widely")
+if (iv=="speed") { h<-h+ggtitle("Speed limits vary widely. 6,9 will converge when plot tf") 
+} else h<-h+ggtitle('6,9 validate tf limit.')
 show(h)
-ggsave( paste('figs/E1_EpostVSStargets/',tit,'.png',sep='') )
+ggsave( paste('figs/',tit,'.png',sep='') )
 #############################################Plot mean speed threshes against numTargets
 tit<-paste0("SpeedMeanThreshAgainstTargets ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=4,height=3) 
@@ -95,7 +96,8 @@ h<-h+ stat_summary(fun.y=mean,geom="point")
 h<-h+ stat_summary(fun.y=mean,geom="line")
 h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.2,conf.int=.95) #error bar
 h<-h+ylab(  paste('threshold ',iv,' (',ifelse(iv=="speed","rps","Hz"),')',sep='')  ) 
-h<-h+ggtitle("6,9 difft validates t.f. limit. Speed limits vary widely")
+if (iv=="speed") {  h<-h+ggtitle("6,9 difft validates t.f. limit. Speed limits vary widely")
+} else h<-h+ggtitle('6,9 validate tf limit.')
 #h<-h+coord_cartesian(ylim=c(1.5,2.5)) #have to use coord_cartesian here instead of naked ylim() to don't lose part of threshline
 h<-h+ggtitle(paste("6,9 difft validates t.f. limit. Speed limits vary widely",lapseMsg))
 show(h)
@@ -106,14 +108,14 @@ quartz(title=tit,width=4,height=3) #create graph of threshes
 threshes$numObjects <- as.numeric(threshes$numObjects) #Otherwise can't connect with lines
 threshes$targets <- threshes$numTargets #Otherwise can't connect with lines
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=numObjects-1,y=thresh,color=targets))
-h<-h+facet_grid(. ~ exp)  #facet_grid(criterion ~ exp)
+          aes(x=numObjects-1,y=thresh)) #,color=factor(targets) #I have no idea why but this doesn't work, hence put it in facet_grid
+h<-h+facet_grid(exp ~ targets)  #facet_grid(criterion ~ exp)
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
 #ylim(1.4,2.5) DO NOT use this command, it will drop some data
 #h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
 #h<-h+ geom_point() + geom_line(aes(group=interaction(subject,numObjects))) #plot individual lines for each subject
 dodgeWidth<-.3
-h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeWidth)) 
+h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeWidth))
 h<-h+ stat_summary(fun.y=mean,geom="line",position=position_dodge(width=dodgeWidth))
 #h<-h+stat_summary(fun.data = mean_cl_normal, geom="errorbar", mult=1, width=.5, position=position_dodge(width=dodgeWidth))
 h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeWidth)) 
@@ -126,26 +128,11 @@ h<-h+ggtitle(paste("5,8 difft validates t.f. limit. Speed limits vary widely",la
 show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
 ggsave( paste('figs/E1_EpostVSStargets/',tit,'.png',sep=''),bg="transparent" ) #bg option will be passed to png
 ########################################Temporal frequency against targets, individual Ss
-threshes$temporalFreq <- threshes$thresh*threshes$numObjects
+threshes$tfThresh <- threshes$thresh*threshes$numObjects
 #p2 <- aes(x=numObjects-1,y=temporalFreq,color=targets); h %+% p2 #quick t.f. plot
 ### Pattern remarkably consistent across Ss, perhaps show in paper?
 tit=paste0("individualSsTemporalFreq ",infoMsg," threeQuarterThresh")
-quartz(title=tit,width=5,height=3.5) #create graph of thresholds
-h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=numTargets,y=temporalFreq,color=factor(numObjects)))
-h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
-h<-h+facet_grid(. ~ exp)  #facet_grid(criterion ~ exp)
-#ylim(1.4,2.5) DO NOT use this command, it will drop some data
-#h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
-h<-h+ geom_point() + geom_line(aes(group=interaction(subject,numObjects))) #plot individual lines for each subject
-h<-h+ylab('threshold (Hz)')
-h<-h+ggtitle("6,9 on top each other, validating t.f. limit")
-show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
-ggsave( paste('figs/E1_EpostVSStargets/',tit,'.png',sep=''),bg="transparent" ) #bg option will be passed to png
-h %+% subset(threshes,criterionNote=="threeQuarters")
-##########################################tf mean threshes against targets
-tit=paste0("tfMeanThreshAgainstTargets ",infoMsg," threeQuarterThresh")
-quartz(title=tit,width=4,height=3)
+quartz(title=tit,width=6,height=3)
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
           aes(x=numTargets,y=temporalFreq,color=factor(numObjects)))
@@ -162,13 +149,32 @@ h<-h+ geom_line(aes(group=interaction(subject,numObjects)),position=position_dod
 h<-h+ggtitle(paste(tit,lapseMsg))
 show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
 ggsave( paste('figs/E1_EpostVSStargets/',tit,'.png',sep=''),bg="transparent" ) #bg option will be passed to png
+h %+% subset(threshes,criterionNote=="threeQuarters")
+##########################################tf mean threshes against targets
+tit=paste0("tfMeanThreshAgainstTargets ",infoMsg," threeQuarterThresh")
+quartz(title=tit,width=6,height=3)
+#Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
+h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
+          aes(x=targets,y=temporalFreq,color=factor(numObjects)))
+h<-h+facet_grid(. ~ exp)  #facet_grid(criterion ~ exp)
+h<-h+ylab('threshold tf (Hz)')
+h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
+#ylim(1.4,2.5) DO NOT use this command, it will drop some data
+#h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
+dodgeAmt=.3
+h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeWidth))
+h<-h+ stat_summary(fun.y=mean,geom="line",position=position_dodge(width=dodgeWidth))
+h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeWidth)) 
+h<-h+ggtitle(paste(tit,lapseMsg))
+show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
+ggsave( paste('figs/E1_EpostVSStargets/',tit,'.png',sep=''),bg="transparent" ) #bg option will be passed to png
 ##########################################tf mean threshes against distractors
 tit=paste0("tfMeanThreshAgainstDistractors ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=4,height=3) 
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=numObjects-1,y=temporalFreq,color=targets))
-h<-h+facet_grid(. ~ exp)  #facet_grid(criterion ~ exp)
+          aes(x=numObjects-1,y=temporalFreq))#,color=targets)) #color=targets gives error I don't know why
+h<-h+facet_grid(exp ~ targets)  #facet_grid(criterion ~ exp)
 h<-h+ylab('threshold tf (Hz)')
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
 h<-h+xlab('Distractors')
@@ -180,16 +186,16 @@ h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeAm
 #h<-h+stat_summary(fun.data = mean_cl_normal, geom="errorbar", mult=1, width=.5, position=position_dodge(width=dodgeWidth))
 h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeAmt)) 
 h<-h+ stat_summary(fun.y=mean,geom="line",position=position_dodge(width=dodgeAmt))
-h<-h+ggtitle(paste(tit,lapseMsg))
+h<-h+ggtitle(paste("Speed-limited for few distractrs, not much flattening by 3 targets",lapseMsg))
 show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
 ggsave( paste('figs/E1_EpostVSSdistractors/',tit,'.png',sep=''),bg="transparent" ) #bg option will be passed to png
 ##########################################tf individual Ss against distractors
 tit=paste0("tfSsAgainstDistractors ",infoMsg," threeQuarterThresh")
-quartz(title=tit,width=4,height=3) 
+quartz(title=tit,width=6,height=3) 
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=numObjects-1,y=temporalFreq,color=targets,shape=subject))
-h<-h+facet_grid(. ~ exp)  #facet_grid(criterion ~ exp)
+          aes(x=numObjects-1,y=temporalFreq,color=subject)) #color=targets,
+h<-h+facet_grid(exp~targets)  #facet_grid(criterion ~ exp)
 h<-h+ylab('threshold tf (Hz)')
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
 h<-h+xlab('Distractors')
@@ -199,7 +205,7 @@ h<-h+scale_x_continuous(breaks=c( xTicks ))
 dodgeAmt=.3
 h<-h+ geom_point()
 h<-h+ geom_line()
-h<-h+ggtitle(paste(tit,lapseMsg))
+h<-h+ggtitle(paste("individ Ss all show speed-limited for few distractrs, not much flattening by 3 targets",lapseMsg))
 show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
 ggsave( paste('figs/E1_EpostVSSdistractors/',tit,'.png',sep=''),bg="transparent" ) #bg option will be passed to png
 
