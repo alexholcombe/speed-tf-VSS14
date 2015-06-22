@@ -12,12 +12,23 @@ datE1 = dat
 expName="postVSS_13targets2349objects" 
 anonDataFname= paste(dataDir,expName,".Rdata",sep="") #data/postVSS_13targets2349objects.RData
 load(anonDataFname,verbose=TRUE) #returns dat
-dat$expName = expName
-colsNotInE1 = setdiff(colnames(dat),colnames(datE1))
+dat_13targets2349objects = dat
+dat_13targets2349objects$expName = expName
+colsNotInE1 = setdiff(colnames(dat_13targets2349objects),colnames(datE1))
 datE1[,colsNotInE1] = -999 #dummy value
-colsNotInThisOne = setdiff(colnames(datE1),colnames(dat))
-dat[,colsNotInThisOne] = -999 #dummy value
-dat = rbind(dat,datE1)
+colsNotInThisOne = setdiff(colnames(datE1),colnames(dat_13targets2349objects))
+dat_13targets2349objects[,colsNotInThisOne] = -999 #dummy value
+
+load("offCenter.RData_symbolic_link",verbose=TRUE) #symbolic link created with ln -s works, but not OSX alias
+offCenter = dat
+iv= 'speed'
+source('analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
+source('plotIndividDataWithPsychometricCurves.R')
+
+
+
+
+dat = rbind(dat_13targets2349objects,datE1)
 
 dat$tf = dat$speed*dat$numObjects
 for (iv in c("speed","tf")) {

@@ -9,4 +9,4 @@ Before that,
 **loadAnonymiseSaveData.R** scripts in subdirs of **analyseExps** folder takes the raw data with identities and anonymises it, spits it into 
 top-level **data** subdirectory. It is these anonymised files that doAllAnalyses etc analyse.
 
-In the middle of extractThreshesAndPlot
+Seems to all be working, except maybe model limits.
