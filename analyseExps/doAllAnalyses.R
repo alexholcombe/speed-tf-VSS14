@@ -71,7 +71,6 @@ paste("Mean CCW=",round(mean(CCW),3),"CW=",round(mean(CW),3),
       "t=",round(t$statistic,3),"p=",round(t$p.value,3))
 options(contrasts=c("contr.sum","contr.poly")) #http://blog.gribblelab.org/2009/03/09/repeated-measures-anova-using-r/
 #This matters sometimes (not always). If you don’t do it, your sum of squares calculations may not match what you get, for example, in SPSS, or in many common textbooks on ANOVA (e.g. Maxwell & Delaney). See [obtaining the same ANOVA results in R as in SPSS - the difficulties with Type II and Type III sums of squares] for a more detailed account of why this is.
-
 source("anovaReport.R")
 aov.out = aov(thresh ~ direction + Error(subject/(direction)), data=CRT)
 writeLines( ANOVAreport(aov.out,"direction")$msg ) #direction not significant
@@ -86,21 +85,31 @@ aov.out = aov(thresh ~ direction*ecc + Error(subject/(direction*ecc)), data=CRT)
 writeLines( ANOVAreport(aov.out,"direction:ecc")$msg ) #interaction not significant
 
 #DIFFERENCE BETWEEN CRT AND SPINZTER
-factors=c("device") 
-ddply(E2, factors,meanThreshold) #average over trialnum,startSpeed
-
-#numObjects
-factorsPlusSubject=c("numObjects","subject","direction","ecc","device") 
-CRTthreshes<- ddply(CRT, factorsPlusSubject,meanThreshold) #average over trialnum,startSpeed
-g=ggplot(CRTthreshes, aes(x=direction, y=thresh, color=factor(numObjects), shape=factor(ecc)))
-       
-g<-g + xlab('Distractors')+ylab('threshold speed (rps)')
-dodgeAmt=0.35
-g<-g+ stat_summary(fun.data="SEerrorbar",geom="point",size=2.5,position=position_dodge(width=dodgeAmt))
-g<-g+stat_summary(fun.data="SEerrorbar",geom="errorbar",width=.25,position=position_dodge(width=dodgeAmt)) 
-g=g+theme_bw() #+ facet_wrap(~direction)
-g<-g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
-g
+factors=c("device"); d<- ddply(E2, factors,meanThreshold)
+d; paste("Advantage of spinzter= ",d$thresh[2]-d$thresh[1])
+#numObjects.  Tiny tiny n-s difference in advantage
+factors=c("numObjects","device"); d<- ddply(E2, factors,meanThreshold)
+d; paste("Advantage of spinzter 2 vs 3 obj= ",round(d$thresh[2]-d$thresh[4],3),
+         "CRT",round(d$thresh[1]-d$thresh[3],3))
+#eccentricity. Tiny tiny n-s difference in advantage
+factors=c("ecc","device"); d<- ddply(E2, factors,meanThreshold)
+d; paste("Advantage of spinzter ecc=4.5 vs 12= ",round(d$thresh[2]-d$thresh[4],3),
+         "CRT",round(d$thresh[1]-d$thresh[3],3))
+aov.out = aov(thresh ~ numObjects*ecc*device + Error(subject/(device)), data=E2)
+summary(aov.out)
+aov.out = aov(thresh ~ numObjects*ecc*device + Error(subject/(device*numObjects*ecc)), data=E2)
+summary(aov.out) #interactions not significant
+#writeLines( ANOVAreport(aov.out,"ecc:device")$msg ) #interaction not significant
+#EFFECT OF ECCENTRICITY WILDLY SIGNIFICANT WHEN EXPRESSED IN LINEAR DEG VISUAL ANGLE
+E2$threshLinear = E2$thresh*E2$ecc*2*pi
+#Make numeric vars a factor, so not treated as regressor (results same, but allows printout of estimated means)
+E2f<-E2; E2f$ecc<-as.factor(E2$ecc); E2f$numObjects<-as.factor(E2f$numObjects)
+ggplot(E2,aes(x=ecc,y=threshLinear,color=factor(device))) + geom_point()
+aov.out = aov(threshLinear ~ numObjects*ecc*device + Error(subject/(device*numObjects*ecc)), data=E2f)
+summary(aov.out)
+model.tables(aov.out,"means")
+#
+#MAKE THE FIGURE
 
 E2threshes<- ddply(E2, factorsPlusSubject,meanThreshold) #average over trialnum,startSpeed
 g=ggplot(E2threshes, aes(x=direction, y=thresh, color=device, shape=factor(ecc)))
@@ -112,16 +121,7 @@ g<-g+ stat_summary(fun.data="SEerrorbar",geom="point",size=2.5,position=position
 g<-g+stat_summary(fun.data="SEerrorbar",geom="errorbar",width=.25,position=position_dodge(width=dodgeAmt)) 
 g=g+theme_bw() #+ facet_wrap(~direction)
 g<-g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
-g #Tiny effect but consistent in 8/9 participants
 
-
-if (length(unique(thr$separatnDeg))>1) {
-  writeLines( ANOVAreport(aov.out,"separatnDeg")$msg )
-  writeLines( ANOVAreport(aov.out,"separatnDeg:numTargets")$msg )
-  sepDeg<- ANOVAreport(aov.out,"separatnDeg")
-  interaxn<- ANOVAreport(aov.out,"separatnDeg:numTargets")
-}
-#Then do ANOVA, make sure no interaction with eccentricity or anything
 
 factorsPlusSubject=c("numObjects","subject","ecc","device") 
 E2threshes<- ddply(E2, factorsPlusSubject,meanThreshold) #average over trialnum,startSpeed
