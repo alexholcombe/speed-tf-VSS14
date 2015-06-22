@@ -54,36 +54,73 @@ meanThreshold<-function(df) {
   df= data.frame(thresh)
   return(df)
 }  
+#all factors: "numObjects","subject","direction","ecc","device","startSpeed"
+#UNDERSTAND THE EFFECT OF DIRECTION OF MOTION
 factorsPlusSubject=c("numObjects","subject","direction","ecc","device") 
-#Document that there is no effect of direction of motion
-E2threshes<- ddply(E2, factorsPlusSubject,meanThreshold) #average over trialnum,startSpeed
-g=ggplot(E2threshes, aes(x=direction, y=thresh, color=device, shape=factor(ecc)))
+#Do statistics on direction of motion
+#First collapse within subject for simple t-test and calculate means
+factors<-c("subject","direction") 
+CRT<-subset(E2,device=="CRT") #only in CRT experiment was direction of motion tested
+CRTdirOnly<- ddply(CRT,c("subject","direction"),meanThreshold) #average over trialnum,startSpeed
+CCW=subset(CRTdirOnly,direction=="CCW")$thresh
+CW=subset(CRTdirOnly,direction=="CW")$thresh
+data.frame(ccw=CCW,cw=CW,polarity=sign(CCW-CW)) #5 of 9 participants slightly faster for CCW
+paste("Mean CCW advantage=",round(mean(CCW)-mean(CW),4))
+t<- t.test(x=CCW,y=CW,paired=TRUE)
+paste("Mean CCW=",round(mean(CCW),3),"CW=",round(mean(CW),3),
+      "t=",round(t$statistic,3),"p=",round(t$p.value,3))
+options(contrasts=c("contr.sum","contr.poly")) #http://blog.gribblelab.org/2009/03/09/repeated-measures-anova-using-r/
+#This matters sometimes (not always). If you don’t do it, your sum of squares calculations may not match what you get, for example, in SPSS, or in many common textbooks on ANOVA (e.g. Maxwell & Delaney). See [obtaining the same ANOVA results in R as in SPSS - the difficulties with Type II and Type III sums of squares] for a more detailed account of why this is.
+
+source("anovaReport.R")
+aov.out = aov(thresh ~ direction + Error(subject/(direction)), data=CRT)
+writeLines( ANOVAreport(aov.out,"direction")$msg ) #direction not significant
+aov.out = aov(thresh ~ direction*numObjects + Error(subject/(direction*numObjects)), data=CRT) 
+writeLines( ANOVAreport(aov.out,"direction")$msg ) #direction not significant
+aov.out = aov(thresh ~ direction*numObjects*ecc + Error(subject/(direction*numObjects*ecc)), data=CRT) 
+writeLines( ANOVAreport(aov.out,"direction")$msg ) #direction not significant
+#check for interactions
+aov.out = aov(thresh ~ direction*numObjects + Error(subject/(direction*numObjects)), data=CRT) 
+writeLines( ANOVAreport(aov.out,"direction:numObjects")$msg ) #interaction not significant
+aov.out = aov(thresh ~ direction*ecc + Error(subject/(direction*ecc)), data=CRT) 
+writeLines( ANOVAreport(aov.out,"direction:ecc")$msg ) #interaction not significant
+
+#DIFFERENCE BETWEEN CRT AND SPINZTER
+factors=c("device") 
+ddply(E2, factors,meanThreshold) #average over trialnum,startSpeed
+
+#numObjects
+factorsPlusSubject=c("numObjects","subject","direction","ecc","device") 
+CRTthreshes<- ddply(CRT, factorsPlusSubject,meanThreshold) #average over trialnum,startSpeed
+g=ggplot(CRTthreshes, aes(x=direction, y=thresh, color=factor(numObjects), shape=factor(ecc)))
+       
 g<-g + xlab('Distractors')+ylab('threshold speed (rps)')
 dodgeAmt=0.35
-SEerrorbar<-function(x){ SEM <- sd(x) / (sqrt(length(x))); data.frame( y=mean(x), ymin=mean(x)-SEM, ymax=mean(x)+SEM ) }
-#g<-g+ geom_point()
 g<-g+ stat_summary(fun.data="SEerrorbar",geom="point",size=2.5,position=position_dodge(width=dodgeAmt))
-#g<-g+ stat_summary(fun.y=mean,geom="point",size=2.5,position=position_dodge(width=dodgeAmt))
 g<-g+stat_summary(fun.data="SEerrorbar",geom="errorbar",width=.25,position=position_dodge(width=dodgeAmt)) 
 g=g+theme_bw() #+ facet_wrap(~direction)
 g<-g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
 g
 
-#Do statistics on direction of motion
-#First collapse within subject for simple t-test and calculate means
-CRT<- subset(E2,device=="CRT") #only in CRT experiment was direction of motion tested
-factors<-c("subject","direction") 
-CRTthreshes<- ddply(E2,factors,meanThreshold) #average over trialnum,startSpeed
-CCW=subset(CRTthreshes,direction=="CCW")$thresh
-CW=subset(CRTthreshes,direction=="CW")$thresh
-t<- t.test(x=CCW,y=CW,paired=TRUE)
-paste("Mean CCW=",round(mean(CCW),2),"CW=",round(mean(CW),2),
-      "t=",round(t$statistic,3),"p=",round(t$p.value),3)
-#Counter-clockwise is faster
-options(contrasts=c("contr.sum","contr.poly")) #http://blog.gribblelab.org/2009/03/09/repeated-measures-anova-using-r/
-#This matters sometimes (not always). If you don’t do it, your sum of squares calculations may not match what you get, for example, in SPSS, or in many common textbooks on ANOVA (e.g. Maxwell & Delaney). See [obtaining the same ANOVA results in R as in SPSS - the difficulties with Type II and Type III sums of squares] for a more detailed account of why this is.
-aov.out = aov(thresh ~ direction + Error(subject/(direction)), data=CRT)
+E2threshes<- ddply(E2, factorsPlusSubject,meanThreshold) #average over trialnum,startSpeed
+g=ggplot(E2threshes, aes(x=direction, y=thresh, color=device, shape=factor(ecc)))
+g<-g +ylab('threshold speed (rps)')
+dodgeAmt=0.35
+SEerrorbar<-function(x){ SEM <- sd(x) / (sqrt(length(x))); data.frame( y=mean(x), ymin=mean(x)-SEM, ymax=mean(x)+SEM ) }
+#g<-g+ geom_point()
+g<-g+ stat_summary(fun.data="SEerrorbar",geom="point",size=2.5,position=position_dodge(width=dodgeAmt))
+g<-g+stat_summary(fun.data="SEerrorbar",geom="errorbar",width=.25,position=position_dodge(width=dodgeAmt)) 
+g=g+theme_bw() #+ facet_wrap(~direction)
+g<-g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
+g #Tiny effect but consistent in 8/9 participants
 
+
+if (length(unique(thr$separatnDeg))>1) {
+  writeLines( ANOVAreport(aov.out,"separatnDeg")$msg )
+  writeLines( ANOVAreport(aov.out,"separatnDeg:numTargets")$msg )
+  sepDeg<- ANOVAreport(aov.out,"separatnDeg")
+  interaxn<- ANOVAreport(aov.out,"separatnDeg:numTargets")
+}
 #Then do ANOVA, make sure no interaction with eccentricity or anything
 
 factorsPlusSubject=c("numObjects","subject","ecc","device") 
