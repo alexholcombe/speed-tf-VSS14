@@ -31,7 +31,7 @@ plotIndividDataAndCurves <- function(df,psychometricCurves) {
 }
 
 for ( expThis in sort(unique(dat$exp)) ) {  #draw individual Ss' data, for each experiment
-  title<-paste('E',expThis,' individual Ss data',sep='')
+  title<-paste('E',expThis,'_indivSs',sep='')
   quartz(title,width=10,height=7)
   thisExpDat <- subset(dat,exp==expThis)
   g=ggplot(data= thisExpDat,aes(x=speed,y=correct,color=factor(numTargets),shape=factor(numObjects)))
@@ -49,5 +49,5 @@ for ( expThis in sort(unique(dat$exp)) ) {  #draw individual Ss' data, for each 
   g<-g+ scale_x_continuous(breaks=c(0.5,1.0,1.5,2.0,2.5),labels=c("0.5","","1.5","","2.5"))
   #g<-g+ scale_x_continuous(breaks=speeds)
   show(g)
-  ggsave( paste('figs/individPlotsE',expThis,'.png',sep='')  )
+  ggsave( paste('figs/',title,'.png',sep='')  )
 }
