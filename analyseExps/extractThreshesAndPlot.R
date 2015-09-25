@@ -164,7 +164,7 @@ quartz(title=tit,width=6,height=3)
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 d<-subset(threshes,criterionNote=="threeQuarters")
 h<-ggplot(data=d,
-          aes(x=targets,y=tfThresh,color=distractors)))
+          aes(x=numTargets,y=tfThresh,color=distractors))
 h<-h+facet_grid(. ~ exp)  #facet_grid(criterion ~ exp)
 h<-h+ylab('threshold tf (Hz)')
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
@@ -172,33 +172,39 @@ h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
 #h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
 h<-h+scale_x_continuous(breaks=c(1,2,3))
 dodgeAmt=.25
-h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeWidth))
-h<-h+ stat_summary(fun.y=mean,geom="line",position=position_dodge(width=dodgeWidth))
-h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeWidth)) 
+h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeAmt))
+h<-h+ stat_summary(fun.y=mean,geom="line",position=position_dodge(width=dodgeAmt))
+h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeAmt)) 
 h<-h+ggtitle(paste(tit,lapseMsg))
 show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
 ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
-
-##########################################tf mean threshes against distractors
+##########################################tf mean threshes against targets
 tit=paste0(expNames,"_tfMeanThreshAgainstDistractors ",infoMsg," threeQuarterThresh")
-quartz(title=tit,width=4,height=3) 
+quartz(title=tit,width=6,height=3)
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
-h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=objects,y=tfThresh))#,color=targets)) #color=targets gives error I don't know why
-h<-h+facet_grid(targets~exp)  #facet_grid(criterion ~ exp)
+d<-subset(threshes,criterionNote=="threeQuarters")
+h<-ggplot(data=d,
+          aes(x=numObjects,y=tfThresh,color=as.factor(targets)))
+h<-h+facet_grid(. ~ exp)  #facet_grid(criterion ~ exp)
 h<-h+ylab('threshold tf (Hz)')
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
-#xTicks= unique(threshes$numObjects-1) #put axis ticks at actual values used
-#h<-h+scale_x_continuous(breaks=c( xTicks ))
+#ylim(1.4,2.5) DO NOT use this command, it will drop some data
 #h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
-dodgeAmt=.3
-h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeAmt)) 
-#h<-h+stat_summary(fun.data = mean_cl_normal, geom="errorbar", mult=1, width=.5, position=position_dodge(width=dodgeWidth))
-h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeAmt)) 
+dodgeAmt=.25
+h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeAmt))
 h<-h+ stat_summary(fun.y=mean,geom="line",position=position_dodge(width=dodgeAmt))
-h<-h+ggtitle(paste("Speed-limited for few distractrs, not much flattening by 3 targets",lapseMsg))
+h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeAmt)) 
+h<-h+ggtitle(paste(tit,lapseMsg))
 show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
 ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
+##########################################tf mean threshes against targets multiple criteria
+quartz(title=tit,width=6,height=8)
+tit=paste0(expNames,"_tfMeanThreshAgainstDistractors ",infoMsg,"_bothCriteria")
+special<-subset(threshes, criterionNote!="nothingSpecial")
+j<-h %+% special
+j<-j+ facet_grid(criterionNote ~ exp)
+j #Decline at 9 objects is more consistet in 3/4 thresh than halfway thresh
+show(j)
 ##########################################tf individual Ss against distractors
 tit=paste0(expNames,"_tfSsAgainstDistractors ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=6,height=3) 
