@@ -58,28 +58,30 @@ for (numObjectsThis in unique(fitParms$numObjects)) {
 }
 
 threshes$targets<-threshes$numTargets
-threshes$distractors<- threshes$numObjects-1
+threshes$distractors<- as.factor(threshes$numObjects-1)
+threshes$objects<-as.factor(threshes$numObjects)
 themeAxisTitleSpaceNoGridLinesLegendBox = theme_classic() + #Remove gridlines, show only axes, not plot enclosing lines
   theme(axis.line = element_line(size=.3, color = "grey"), 
         axis.title.y=element_text(vjust=0.24), #Move y axis label slightly away from axis
         axis.title.x=element_text(vjust=.10), #Move x axis label slightly away from axis
         legend.key = element_blank(), #don't put boxes around legend bits
-        legend.background= element_rect(color="grey90"), #put big light grey box around entire legend
+        legend.background= element_rect(fill="transparent",color="grey90"), #put big light grey box around entire legend
         panel.background = element_rect(fill = "transparent",colour = NA),
-        plot.background = element_rect(fill = "transparent",colour = NA)   )
+        plot.background = element_rect(fill = "transparent",colour = NA),
+        strip.background = element_rect(fill = 'transparent',colour=NA) #condition indicators background
+        #strip.text.y= element_text(vjust=0, size=14)  #seems to have no effect
+          )
 ##########Plot threshes, exp*subject*numTargets*numObjects ################
 expNames<- paste0( unique(threshes$exp), collapse="" )
 tit=paste(expNames,"_indivSs_threshesSpeed_",infoMsg,"_threeQuarterThresh",sep='')
 dv="speed"
 quartz(title=tit,width=6,height=3) #create graph of thresholds
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=targets,y=thresh,color=factor(distractors)))
+          aes(x=targets,y=thresh,color=distractors))
 h<-h+facet_grid(. ~ exp)  #facet_grid(criterion ~ exp)
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox #theme_bw() 
 xTicks= unique(threshes$targets) #put axis ticks at actual values used
 h<-h+scale_x_continuous(breaks=c( xTicks ))
-h<-h+
-#ylim(1.4,2.5) DO NOT use this command, it will drop some data
 #h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
 h<-h+ geom_point() + geom_line(aes(group=interaction(subject,numObjects))) #plot individual lines for each subject
 h<-h+ylab(  paste('threshold ',iv,' (',ifelse(dv=="speed","rps","Hz"),')',sep='') )  
@@ -90,8 +92,9 @@ ggsave( paste('figs/',tit,'.png',sep='') )
 #############################################Plot mean speed threshes against numTargets
 tit<-paste0(expNames,"_SpeedMeanThreshAgainstTargets)",infoMsg,"_threeQuarterThresh")
 quartz(title=tit,width=4,height=3) 
-h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=numTargets,y=thresh,color=factor(numObjects)))
+#g<-g+guides(color=guide_legend(title="targets")) #change legend title
+h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   
+          aes(x=numTargets,y=thresh,color=objects))
 h<-h+facet_grid(. ~ exp)  #facet_grid(criterion ~ exp)
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
 #ylim(1.4,2.5) DO NOT use this command, it will drop some data
@@ -139,7 +142,7 @@ tit=paste0(expNames,"_indivSsTemporalFreq ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=6,height=3)
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=numTargets,y=tfThresh,color=factor(numObjects)))
+          aes(x=numTargets,y=tfThresh,color=objects)))
 h<-h+facet_grid(. ~ exp)  #facet_grid(criterion ~ exp)
 h<-h+ylab('threshold tf (Hz)')
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
@@ -153,7 +156,8 @@ h<-h+ geom_line(aes(group=interaction(subject,numObjects)),position=position_dod
 h<-h+ggtitle(paste(tit,lapseMsg))
 show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
 ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
-h %+% subset(threshes,criterionNote=="threeQuarters")
+#j<-h %+% threshes 
+#j<-j+ facet_grid(criterion ~ exp)
 ##########################################tf mean threshes against targets
 tit=paste0(expNames,"_tfMeanThreshAgainstTargets ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=6,height=3)
@@ -174,17 +178,18 @@ h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95
 h<-h+ggtitle(paste(tit,lapseMsg))
 show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
 ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
+
 ##########################################tf mean threshes against distractors
 tit=paste0(expNames,"_tfMeanThreshAgainstDistractors ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=4,height=3) 
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=distractors,y=tfThresh))#,color=targets)) #color=targets gives error I don't know why
-h<-h+facet_grid(exp ~ targets)  #facet_grid(criterion ~ exp)
+          aes(x=objects,y=tfThresh))#,color=targets)) #color=targets gives error I don't know why
+h<-h+facet_grid(targets~exp)  #facet_grid(criterion ~ exp)
 h<-h+ylab('threshold tf (Hz)')
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
-xTicks= unique(threshes$numObjects-1) #put axis ticks at actual values used
-h<-h+scale_x_continuous(breaks=c( xTicks ))
+#xTicks= unique(threshes$numObjects-1) #put axis ticks at actual values used
+#h<-h+scale_x_continuous(breaks=c( xTicks ))
 #h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
 dodgeAmt=.3
 h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeAmt)) 
@@ -216,7 +221,31 @@ ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed
 
 cat('I give you threshes')
 ###################################
-#plot thresholds (at only one criterion level) for all 3 experiments at same time
+#plot thresholds all criteria levels
+tit=paste0(expNames,"_tfMeanThreshAgainstTargets ",infoMsg)
+quartz(title=tit,width=6,height=3)
+#Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
+d<-subset(threshes,criterionNote!="nothingSpecial")
+d<-threshes
+h<-ggplot(data=d, aes(x=numObjects,y=tfThresh,color=targets))
+h<-h+facet_grid(criterion ~ exp)
+h<-h+ylab('threshold tf (Hz)')
+h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
+#ylim(1.4,2.5) DO NOT use this command, it will drop some data
+#h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
+dodgeAmt=.25
+h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeAmt))
+h<-h+ stat_summary(fun.y=mean,geom="line",position=position_dodge(width=dodgeAmt))
+h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeAmt)) 
+h<-h+ggtitle(paste(tit,lapseMsg))
+show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
+ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
+
+
+j<-h %+% subset(threshes, criterionNote!="nothingSpecial")
+j<-j+ facet_grid(criterion ~ exp)
+j
+
 # quartz()
 # #tt<-subset(threshes,subject=="AH");  tt<-subset(tt,numTargets=="1")
 # #tt$subject<-factor(tt$subject) #in case unused levels were the problem
