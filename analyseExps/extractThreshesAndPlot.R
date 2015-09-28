@@ -210,7 +210,7 @@ tit=paste0(expNames,"_tfSsAgainstDistractors ",infoMsg," threeQuarterThresh")
 quartz(title=tit,width=6,height=3) 
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
 h<-ggplot(data=subset(threshes,criterionNote=="threeQuarters"),   #midpoint
-          aes(x=distractors,y=tfThresh,color=subject)) #color=targets,
+          aes(x=numObjects,y=tfThresh,color=subject)) #color=targets,
 h<-h+facet_grid(exp~targets)  #facet_grid(criterion ~ exp)
 h<-h+ylab('threshold tf (Hz)')
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
@@ -227,7 +227,8 @@ ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed
 
 cat('I give you threshes')
 ###################################
-#plot thresholds all criteria levels
+#plot thresholds all criteria levels I DONT THINK I CAN DO THAT BECAUSE DIFFERENT ONES FOR DIFFERENT
+#NUM TARGETS
 tit=paste0(expNames,"_tfMeanThreshAgainstTargets ",infoMsg)
 quartz(title=tit,width=6,height=3)
 #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
@@ -247,10 +248,6 @@ h<-h+ggtitle(paste(tit,lapseMsg))
 show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
 ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
 
-
-j<-h %+% subset(threshes, criterionNote!="nothingSpecial")
-j<-j+ facet_grid(criterion ~ exp)
-j
 
 # quartz()
 # #tt<-subset(threshes,subject=="AH");  tt<-subset(tt,numTargets=="1")
