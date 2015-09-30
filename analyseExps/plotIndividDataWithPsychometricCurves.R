@@ -2,7 +2,8 @@
 #dat
 #iv - "tf" or "speed"
 source('rnc_ggplot2_border_themes_2013_01.r') # Simple extensions for removing graph sides, see http://egret.psychol.cam.ac.uk/statistics/R/extensions/rnc_ggplot2_border_themes_2013_01.r  
-rowsLabeller <- function(variable,value){ #Label facet_grid with "3 deg" instead of "3"
+rowsLabeller <- function(variable,value) { #Label facet_grid with "3 deg" instead of "3"
+  #cat(paste(variable)); cat(paste(value))
   if (variable=='separatnDeg') {
     return (paste(value,'deg')) 
   } else if (variable=='numObjects') {
@@ -58,13 +59,17 @@ for ( expThis in sort(unique(dat$exp)) ) {  #draw individual Ss' data, for each 
   quartz(title,width=winWidth,height=winHeight)
   g=ggplot(data= thisExpDat,aes(x=speed,y=correct,color=factor(numTargets)))
   g=g+stat_summary(fun.y=mean,geom="point", position=position_jitter(w=0.04,h=0),alpha=.95)
-  g=g+facet_grid(numObjects ~ subject,labeller=rowsLabeller)+theme_bw()
+  #The below rowsLabeller stopped working, seems like ggplot not sending both variables anymore
+  if (packageVersion("ggplot2") != '1.0.1') {
+    print("WARNING! Probably rowsLabeller wont work anymore, check help for details")
+  }
+  g=g+facet_grid(numObjects ~ subject, labeller = rowsLabeller) 
   #g<-g+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
   #draw psychometric functions  
   thisPsychometrics <- subset(psychometrics,exp==expThis)
   g=g+geom_line(data=thisPsychometrics)
   g=g+ geom_hline(mapping=aes(yintercept=chanceRate),lty=2)  #draw horizontal line for chance performance
-  g=g+xlab('Speed (rps)')+ylab('Correct')
+  g=g+xlab('Speed (rps)')+ylab('Correct') +theme_bw()
   #g=g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
   #g<- g+ theme(axis.title.y=element_text(size=12,angle=90),axis.text.y=element_text(size=10),axis.title.x=element_text(size=12),axis.text.x=element_text(size=10))
   g<-g+ scale_x_continuous(breaks=c(0.5,1.0,1.5,2.0,2.5),labels=c("0.5","","1.5","","2.5"))

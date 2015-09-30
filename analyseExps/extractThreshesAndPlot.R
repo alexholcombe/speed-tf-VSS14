@@ -251,20 +251,23 @@ h<-h+ggtitle(paste(tit,lapseMsg))
 show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
 ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
 
-
-# quartz()
-# #tt<-subset(threshes,subject=="AH");  tt<-subset(tt,numTargets=="1")
-# #tt$subject<-factor(tt$subject) #in case unused levels were the problem
-# #h<-ggplot(data= fake, aes(x=separatnDeg,y=thresh))
-# h<-ggplot(data= subset(threshes,numTargets!="2P"), aes(x=separatnDeg,y=thresh,color=numTargets,shape=exp))
-# h<-h + facet_grid(exp~., scales="free") # ~criterion
-# #h<-h+stat_summary(data=threshesThisNumeric,fun.data="mean_cl_boot",geom="errorbar",conf.int=.95,position=position_dodge(width=.2)) #error bar
-# h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",conf.int=.95,position=position_dodge(width=.2)) #error bar
-# h<-h+theme_bw() + xlab("Separation (deg)")
-# #ylim(1.4,2.5) DO NOT use this command, it will drop some data
+#################SLOPES##################
+# h<-ggplot(data=threshes,aes(x=separatnDeg,y=-slopeThisCrit,color=numTargets))
+# 
+# tit=paste0(expNames,"_tfMeanThreshAgainstDistractors ",infoMsg," threeQuarterThresh")
+# quartz(title=tit,width=6,height=3)
+# #Not fair to include values above the worst-observer's lapse rate. Because then the speed limit cost of second target is infinite.
+# d<-subset(threshes,criterionNote=="threeQuarters")
+# d$targets<-as.factor(d$numTargets); d$objects<-d$numObjects
+# h<-ggplot(data=d, aes(x=objects,y=tfThresh,color=targets))
+# h<-h+facet_grid(exp ~ .)  #facet_grid(criterion ~ exp)
+# h<-h+ylab('threshold (Hz)')
+# h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
 # #h<-h+ coord_cartesian( xlim=c(xLims[1],xLims[2]), ylim=yLims ) #have to use coord_cartesian here instead of naked ylim()
-# #h<-h+coord_cartesian(ylim=c(1.4,2.6)) #have to use coord_cartesian here instead of naked ylim() to don't lose part of threshline
-# h<-h+ stat_summary(fun.y=mean,geom="point") + stat_summary(fun.y=mean,geom="line") 
-# h+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines
+# h<-h+scale_x_continuous(breaks=c(3,6,9,12))
+# dodgeAmt=.25
+# h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeAmt))
+# h<-h+ stat_summary(fun.y=mean,geom="line",position=position_dodge(width=dodgeAmt))
+# h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeAmt)) 
 # h<-h+ggtitle(paste(tit,lapseMsg))
-# h
+# show(h) #http://stack
