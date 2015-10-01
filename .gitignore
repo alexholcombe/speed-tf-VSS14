@@ -1,5 +1,5 @@
 .DS*
-analyseExps/.DS_Store
+analyseExps/.*
 figs/
 #contains data and anonymisation algorithm
 analyseExps/experiment2_methodAdjust/
