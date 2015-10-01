@@ -1,4 +1,5 @@
 .DS*
+VSS2014_poster*
 analyseExps/.*
 figs/
 #contains data and anonymisation algorithm
