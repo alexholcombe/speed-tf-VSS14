@@ -1,56 +1,36 @@
-#working directory set by starting Rstudio via .Rproj file
-#setwd("/Users/alexh/Documents/attention_tempresltn/multiple object tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/speed-tf-VSS14")
-source('helpers/psychometricHelpRobust6.R') #for makeMyPsychoCorr, themeAxisTitleSpaceNoGridLinesLegendBox
+#Intended to be called by doAllAnalyses_E4ab.R, which provides
+#thr - thresh, slope for E4a, E4b, and HC2013 experiments
+#dat which contains the data for all three experiments
 
-meanIfNumber<-function(x) {if (is.numeric(x)) return (mean(x))  else return (unique(x)[1]) }
-colsToDelete=c("nErrs","temp","nWarns","firstWarn","error","targets","thresh","slopeThisCrit","temporalFreq") 
-
-#######Try it for E1 threshes123targets269objects of HolcombeChen2014VSS.  threshes gotten by doAllAnalyses.R
 #Modeled effect of additional object on speed threshold (taking into account t.f. limit).
 #For additional targets, want to check if constraint of lower t.f. limit sufficient to explain decrease of 2-object speed limit with targets
-load("data/threshes_speed_123targets269objects.Rdata",verbose=TRUE)
-speedLimitEachSubject = subset(threshes_speed_123targets269objects,numTargets==1 & numObjects==2) #assume this is true speed limit
-load("data/threshes_tf_123targets269objects.Rdata",verbose=TRUE)
 #Assuming tfLimit changes with targets, but speed limit doesn't.
 #Eventually, need to compare to converse prediction that speedLimit changes with targets, but tfLimit doesn't
-tfLimitEachSubject = subset(threshes_tf_123targets269objects, numObjects==9) #assuming this is true tf limit
-actualLimitEachSubject = threshes_speed_123targets269objects #not currently used for anything until add observed data at end
 
-speedLimitEachSubject<-speedLimitEachSubject[ , !names(speedLimitEachSubject) %in% colsToDelete] 
-tfLimitEachSubject<-tfLimitEachSubject[ , !names(tfLimitEachSubject) %in% colsToDelete] 
-actualLimitEachSubject<-actualLimitEachSubject[ , !names(actualLimitEachSubject) %in% colsToDelete]
-#Need to add loading of data and psychometric functions for E4a and E4b
+#source('helpers/psychometricHelpRobust6.R') #for makeMyPsychoCorr, themeAxisTitleSpaceNoGridLinesLegendBox
+
+meanIfNumber<-function(x) {if (is.numeric(x)) return (mean(x))  else return (unique(x)[1]) }
+colsToDelete=c("nErrs","temp","nWarns","firstWarn","error","targets","method","linkFx","temporalFreq") 
+
+th<- thr[ , !names(thr) %in% colsToDelete] #delete unused columns
+tfLimitsEachS = subset(th,numObjects>=9 & criterionNote=="threeQuarters" & iv=="tf")
+#convert to tf
+
+#calculate average across all participants for reporting in manuscript
+tfLimAvg<- dplyr::summarise(dplyr::group_by(tfLimitsEachS, subject,exp,numTargets),
+                 thresh=mean(thresh))
+#Will I be reporting the grand mean across the 3 exps?
+tfLimAv<- dplyr::summarise(dplyr::group_by(tfLimAvg,numTargets),
+                           thresh=mean(thresh))
+  
+speedLimitEachS<-subset(th, numObjects==2 & criterionNote=="threeQuarters" & iv=="speed")
+
+psychometricTf<- rbind(tfLimitsEachS, tfLimAv)
+psychometricSp= rbind(speedLimitEachS,speedLimitMean)
+
 ###################################################################################################
 #Create predicted psychometric curve for each condition I'm interested in, based on 
 #theoretical speed limit. 
-
-#eliminate any copies for each criterion, will use my own criteria
-speedLimitEachSubject<-speedLimitEachSubject[ , names(speedLimitEachSubject) != 'criterion']
-speedLimitEachSubject<-unique(speedLimitEachSubject)
-tfLimitEachSubject<-tfLimitEachSubject[ , names(tfLimitEachSubject) != 'criterion']
-tfLimitEachSubject<-unique(tfLimitEachSubject)
-actualLimitEachSubject<-actualLimitEachSubject[ , names(actualLimitEachSubject) != 'criterion']
-actualLimitEachSubject<-unique(actualLimitEachSubject)
-
-#Aggregate so can also plot mean between participants
-c1=c("numObjects","numTargets") #variable to preserve, collapse across rest
-speedLimitMean<-aggregate(speedLimitEachSubject, by=speedLimitEachSubject[c1], #var to preserve
-                                  meanIfNumber) #average whole thing
-tfLimitMean<-aggregate(tfLimitEachSubject, by=tfLimitEachSubject[c1], #var to preserve
-                          meanIfNumber) #average whole thing
-actualLimitMean<-aggregate(actualLimitEachSubject, by=actualLimitEachSubject[c1], #var to preserve
-                       meanIfNumber) #average whole thing
-speedLimitMean<-speedLimitMean[c(-1,-2)] #delete first column (created by aggregate)
-tfLimitMean<-tfLimitMean[c(-1,-2)] #delete first column (created by aggregate)
-actualLimitMean<-actualLimitMean[c(-1,-2)] #delete first column (created by aggregate)
-speedLimitMean$subject="mean"
-tfLimitMean$subject="mean"
-actualLimitMean$subject="mean"
-
-psychometricsSpeed= rbind(speedLimitEachSubject,speedLimitMean)
-psychometricsHz= rbind(tfLimitEachSubject,tfLimitMean) #includes separate limit for each target number
-psychometricsActual= rbind(actualLimitEachSubject,actualLimitMean) #includes separate limit for each target number
-
 #replicate for each number of targets
 nTarg=c(1,2,3)
 rn = row.names(psychometricsSpeed)
