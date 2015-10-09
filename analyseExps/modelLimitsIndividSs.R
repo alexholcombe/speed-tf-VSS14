@@ -18,7 +18,8 @@ actualLimitEachSubject = threshes_speed_123targets269objects #not currently used
 
 speedLimitEachSubject<-speedLimitEachSubject[ , !names(speedLimitEachSubject) %in% colsToDelete] 
 tfLimitEachSubject<-tfLimitEachSubject[ , !names(tfLimitEachSubject) %in% colsToDelete] 
-actualLimitEachSubject<-actualLimitEachSubject[ , !names(actualLimitEachSubject) %in% colsToDelete] 
+actualLimitEachSubject<-actualLimitEachSubject[ , !names(actualLimitEachSubject) %in% colsToDelete]
+#Need to add loading of data and psychometric functions for E4a and E4b
 ###################################################################################################
 #Create predicted psychometric curve for each condition I'm interested in, based on 
 #theoretical speed limit. 
