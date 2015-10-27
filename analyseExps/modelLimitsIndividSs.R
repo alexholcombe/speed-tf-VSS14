@@ -19,13 +19,16 @@ tfLimitsEachS = subset(th,numObjects>=9 & criterionNote=="threeQuarters" & iv=="
 #calculate average across all participants for reporting in manuscript
 tfLimAvg<- dplyr::summarise(dplyr::group_by(tfLimitsEachS, subject,exp,numTargets),
                  thresh=mean(thresh))
+tfLimAv<- dplyr::summarise(dplyr::group_by(tfLimAvg, exp, numTargets),
+                           thresh=mean(thresh))
+tfLimAv$subject<-"mean" #I'll need this to show the average predicted psychometric function
 #Will I be reporting the grand mean across the 3 exps?
-tfLimAv<- dplyr::summarise(dplyr::group_by(tfLimAvg,numTargets),
+tfLimA<- dplyr::summarise(dplyr::group_by(tfLimAvg,numTargets),
                            thresh=mean(thresh))
   
 speedLimitEachS<-subset(th, numObjects==2 & criterionNote=="threeQuarters" & iv=="speed")
 
-psychometricTf<- rbind(tfLimitsEachS, tfLimAv)
+psychometricTf<- rbind(tfLimitsEachS, tfLimAvg)
 psychometricSp= rbind(speedLimitEachS,speedLimitMean)
 
 ###################################################################################################

@@ -6,6 +6,8 @@
 #function calcPctCorrThisIvVal
 #iv
 #varyLapseRate, lapseMinMax
+source('helpers/psychometricHelpRobust6.R') #for makeMyThreshGetNumerically
+
 infoMsg=paste0(iv,"-fit")
 
 lapseMsg=""
@@ -54,7 +56,13 @@ for (numObjectsThis in unique(fitParms$numObjects)) {
     #Don't do it where criterion corresponds to below chance
     #psychometricTemp <- subset(psychometricTemp, numObjects > 1/threshCriterion) #For these numObjects conditions, chance is above the current criterion
     
-    threshesThisNumeric = ddply(psychometricTemp,factorsPlusSubject,myThreshGetNumeric) 
+    threshesThisNumeric = ddply(psychometricTemp,factorsPlusSubject,myThreshGetNumeric)
+    if (threshCriteriaNotes[i] =="threeQuarters") { #look out for where couldn't extract thresh
+      whereCouldntExtractThresh <- subset(threshesThisNumeric,is.na(thresh))
+      if (length(whereCouldntExtractThresh)>0) {
+        lastCouldntExtractThresh<-whereCouldntExtractThresh
+      }
+    }
     threshesThisNumeric$criterion <- threshCriterion
     threshesThisNumeric$criterionNote <- threshCriteriaNotes[i]
     threshesThis<- merge(threshesThisNumeric,fitParms)

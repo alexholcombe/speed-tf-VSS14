@@ -1,7 +1,8 @@
 #Variables expected:
 #dat
 #iv - "tf" or "speed"
-source('rnc_ggplot2_border_themes_2013_01.r') # Simple extensions for removing graph sides, see http://egret.psychol.cam.ac.uk/statistics/R/extensions/rnc_ggplot2_border_themes_2013_01.r  
+plotTf_as_tf_speed_as_speed <- TRUE #If false, plot speed on horizontal axis even if fit was to TF
+source('helpers/rnc_ggplot2_border_themes_2013_01.r') # Simple extensions for removing graph sides, see http://egret.psychol.cam.ac.uk/statistics/R/extensions/rnc_ggplot2_border_themes_2013_01.r  
 rowsLabeller <- function(variable,value) { #Label facet_grid with "3 deg" instead of "3"
   #cat(paste(variable)); cat(paste(value))
   if (variable=='separatnDeg') {
@@ -12,7 +13,6 @@ rowsLabeller <- function(variable,value) { #Label facet_grid with "3 deg" instea
     return(levels(thisExpDat$subject)[value])
   }
 }
-
 themeAxisTitleSpaceNoGridLinesLegendBox = theme_classic() + #Remove gridlines, show only axes, not plot enclosing lines
   theme(axis.line = element_line(size=.3, color = "grey"), 
         axis.title.y=element_text(vjust=0.24), #Move y axis label slightly away from axis
@@ -24,7 +24,7 @@ themeAxisTitleSpaceNoGridLinesLegendBox = theme_classic() + #Remove gridlines, s
 
 if (!("speed" %in% colnames(psychometrics))) { #psychometrics must have been fit to tf
   stopifnot("tf" %in% colnames(psychometrics)) #confirm my interpretation that tf was fit
-  psychometrics$speed = psychometrics$tf / psychometrics$numObjects #because always plot them in terms of speed
+  psychometrics$speed = psychometrics$tf / psychometrics$numObjects #so can plot them in terms of speed
 }
 
 #function, not used, that plots the psychometric functions for a dataset / experiment /criterion,
@@ -49,15 +49,20 @@ plotIndividDataAndCurves <- function(df,psychometricCurves) {
   g		
 }
 
+if (plotTf_as_tf_speed_as_speed) { abscissa=iv } else 
+  { abcissa = "speed" }
+if (abscissa == "speed") { unitsLabel = "(rps)" } else
+  { unitsLabel = "(Hz)" }
 for ( expThis in sort(unique(dat$exp)) ) {  #draw individual Ss' data, for each experiment
-  title<-paste('E',expThis,'_indivSs',sep='')
+  title<-paste('E',expThis,'_indivSs_',iv,"_fit",sep='')
   thisExpDat <- subset(dat,exp==expThis)
   nrows = length(unique(thisExpDat$numObjects))
   winHeight = 1.0*nrows
   ncols = length(unique(thisExpDat$subject))
   winWidth = 1.5*ncols
   quartz(title,width=winWidth,height=winHeight)
-  g=ggplot(data= thisExpDat,aes(x=speed,y=correct,color=factor(numTargets)))
+  #g=ggplot(data= thisExpDat,aes(x=speed,y=correct,color=factor(numTargets)))
+  g=ggplot(data= thisExpDat,aes_string(x=abscissa,y="correct",color="factor(numTargets)"))
   g=g+stat_summary(fun.y=mean,geom="point", position=position_jitter(w=0.04,h=0),alpha=.95)
   #The below rowsLabeller stopped working, seems like ggplot not sending both variables anymore
   if (packageVersion("ggplot2") != '1.0.1') {
@@ -69,10 +74,11 @@ for ( expThis in sort(unique(dat$exp)) ) {  #draw individual Ss' data, for each 
   thisPsychometrics <- subset(psychometrics,exp==expThis)
   g=g+geom_line(data=thisPsychometrics)
   g=g+ geom_hline(mapping=aes(yintercept=chanceRate),lty=2)  #draw horizontal line for chance performance
-  g=g+xlab('Speed (rps)')+ylab('Correct') +theme_bw()
-  #g=g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# hide all gridlines.
-  #g<- g+ theme(axis.title.y=element_text(size=12,angle=90),axis.text.y=element_text(size=10),axis.title.x=element_text(size=12),axis.text.x=element_text(size=10))
-  g<-g+ scale_x_continuous(breaks=c(0.5,1.0,1.5,2.0,2.5),labels=c("0.5","","1.5","","2.5"))
+  g=g+ xlab( paste(abscissa,unitsLabel) )
+  g=g+ ylab('Correct') +theme_bw()
+  if (abscissa =="speed") {
+    g<-g+ scale_x_continuous(breaks=c(0.5,1.0,1.5,2.0,2.5),labels=c("0.5","","1.5","","2.5"))
+  }
   g<-g+ themeAxisTitleSpaceNoGridLinesLegendBox
   prettifyForPaper<-TRUE
   if (prettifyForPaper) {
@@ -95,6 +101,7 @@ for ( expThis in sort(unique(dat$exp)) ) {  #draw individual Ss' data, for each 
       g<-g+scale_colour_manual(values = c("#F8766D","#619CFF"))
     }
   }
+  #g + scale_x_log10()
   show(g)
   ggsave( paste('figs/',title,'.png',sep='')  )
 }

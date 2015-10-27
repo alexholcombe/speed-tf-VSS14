@@ -45,9 +45,9 @@ dat$tf<- dat$numObjects*dat$speed
 for (iv in c("speed","tf")) {
   cat('Fitting data, extracting threshes, plotting with iv=',iv)
   source('analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
-  if (iv=="speed") { #if not, don't bother
+  #if (iv=="speed") { #if not, don't bother
     source('plotIndividDataWithPsychometricCurves.R')
-  }
+  #}
   source("extractThreshes.R") #provides threshes
   varName=paste("threshes_",iv,"_",expName,sep='') #combine threshes
   assign(varName,threshes)
@@ -55,6 +55,15 @@ for (iv in c("speed","tf")) {
   cat("Saved",varName)
 }
 thrTf<-threshes_tf_postVSS_13targets2349objects; thrTf$iv<-"tf"
+#Some three-quarters threshes are NA
+# exp numObjects numTargets subject thresh
+#  4b          4          3      CF     NA      
+#HC2013       12          3      PB     NA     
+#HC2013       12          3      SM     NA 
+
+thrTF_wtf<- subset(thrTf,criterionNote=="threeQuarters")
+subset(thrTF_wtf, is.na(thresh))
+       
 thrSp<-threshes_speed_postVSS_13targets2349objects; thrSp$iv<-"speed"
 thr<- rbind(thrTf,thrSp)
 source("makePlots.R")
@@ -147,6 +156,5 @@ g<-g+theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())# h
 quartz(width=3.2,height=4); g
 ggsave( paste('figs/',tit,'.png',sep='') )
 
-
-
-#source ( model limits) ??
+#model limits
+source("modelLimitsIndividSs.R")
