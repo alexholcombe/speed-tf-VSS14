@@ -171,10 +171,7 @@ makeParamFit <- function(iv, lapseMinMax, initialMethod, verbosity=0) {
     #data comes in one row per trial, but binomFit wants total correct, numTrials
     #so now I have to count number of correct, incorrect trials for each speed
     #assuming there's no other factors to worry about
-    if (iv=="speed")
-      sumry = ddply(df,.(speed),summarizNumTrials) #also calculates chanceRate
-    else if (iv=="tf")
-      sumry = ddply(df,.(tf),summarizNumTrials) #also calculates chanceRate
+    sumry = ddply(df,.(iv),summarizNumTrials) #also calculates chanceRate
   	#curveFit(sumry$speed,sumry$correct,sumry$numTrials,subjectname,lapsePriors,meanPriors,widthPriors,'MAPEstimation')  
 	returnAsDataframe=TRUE #this allows keeping the text of the warning messages. (Boot can't do this)
   	fitParms = fitBrglmKludge(sumry,lapseMinMax, returnAsDataframe,initialMethod,verbosity)
@@ -225,26 +222,16 @@ makeMyPsychoCorr2<- function(iv) { #Very similar to makeMyPlotCurve below, only 
                   numCorrect=c(46,45,35,26,32),numTrials=c(48,48,48,48,49))
     dh$lapseRate=df$lapseRate
     dh<-dh
-    if(iv=="speed") {
-      exampleModel<-suppressWarnings( 
-        binomfit_limsAlex(dh$numCorrect, dh$numTrials, dh$speed, link=as.character(df$linkFx), 
+    exampleModel<-suppressWarnings( 
+        binomfit_limsAlex(dh$numCorrect, dh$numTrials, dh[,iv], link=as.character(df$linkFx), 
                           guessing=df$chanceRate, lapsing=df$lapseRate, initial=as.character(df$method))  #, tryAlts=FALSE  ) 
-      ) } else if (iv=="tf") {
-        exampleModel<-suppressWarnings( 
-          binomfit_limsAlex(dh$numCorrect, dh$numTrials, dh$tf, link=as.character(df$linkFx), 
-                            guessing=df$chanceRate, lapsing=df$lapseRate, initial=as.character(df$method))  #, tryAlts=FALSE  ) 
-        ) } else {
-          print(paste("iv must be either speed or tf, but what was passed was",tf))
-        }    
+      )  
     exampleModel=exampleModel$fit
     #modify example fit, use its predictor only plus parameters I've found by fitting
     exampleModel[1]$coefficients[1] = df$mean
     exampleModel[1]$coefficients[2] = df$slope
 
-    if (iv=="speed") {
-      pfit= suppressWarnings( predict( exampleModel, data.frame(x=df$speed), type = "response" ) ) #because of bad previous fit, generates warnings
-    } else if (iv=="tf")
-      pfit= suppressWarnings( predict( exampleModel, data.frame(x=df$tf), type = "response" ) ) #because of bad previous fit, generates warnings
+    pfit= suppressWarnings( predict( exampleModel, data.frame(x=df[,iv], type = "response" ) ) #because of bad previous fit, generates warnings
     
     if (df$method=="brglm.fit" | df$method=="glm.fit") {#Doesn't support custom link function, so had to scale from guessing->1-lapsing manually
       pfit<-unscale0to1(pfit,df$chanceRate,df$lapseRate)
@@ -309,17 +296,10 @@ makeMyPlotCurve4<- function(iv,xmin,xmax,numxs) {#create psychometric curve plot
                   numCorrect=c(46,45,35,26,32),numTrials=c(48,48,48,48,49))
     dh$lapseRate=df$lapseRate
     #binomfit_limsAlex(df$numCorrect,df$numTrials,df$speed,link=linkf,guessing=chanceRate,lapsing=l,control=cntrl,initial="brglm.fit")
-    if(iv=="speed") {
-      exampleModel<-suppressWarnings( 
-        binomfit_limsAlex(dh$numCorrect, dh$numTrials, dh$speed, link=as.character(df$linkFx), 
+    exampleModel<-suppressWarnings( 
+        binomfit_limsAlex(dh$numCorrect, dh$numTrials, dh[,iv], link=as.character(df$linkFx), 
                           guessing=df$chanceRate, lapsing=df$lapseRate, initial=as.character(df$method))  #, tryAlts=FALSE  ) 
-      ) } else if (iv=="tf") {
-      exampleModel<-suppressWarnings( 
-        binomfit_limsAlex(dh$numCorrect, dh$numTrials, dh$tf, link=as.character(df$linkFx), 
-                          guessing=df$chanceRate, lapsing=df$lapseRate, initial=as.character(df$method))  #, tryAlts=FALSE  ) 
-      ) } else {
-        print(paste("iv must be either speed or tf, but what was passed was",tf))
-      }    
+      )   
     exampleModel=exampleModel$fit
     #modify example fit, use its predictor only plus parameters I've found by fitting
     exampleModel[1]$coefficients[1] = df$mean
@@ -335,10 +315,9 @@ makeMyPlotCurve4<- function(iv,xmin,xmax,numxs) {#create psychometric curve plot
     #returning the dependent variable with two names because some functions expect one
     #Reason is that want to be able to plot it with same ggplot stat_summary as use for raw
     #data that expects "correct"
-    if (iv=="tf") {
-      data.frame(tf=xs,pCorr=pfit,correct=pfit)
-    } else if (iv=="speed")        
-      data.frame(speed=xs,pCorr=pfit,correct=pfit)
+    ans<- data.frame(iv=xs,pCorr=pfit,correct=pfit)
+    colnames(ans)[1] <- iv #because wasn't interpreted as characters above
+	return (ans)
   }
   return (fnToReturn)
 }
