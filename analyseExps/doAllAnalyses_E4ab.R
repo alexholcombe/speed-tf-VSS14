@@ -3,6 +3,7 @@
 setwd("/Users/alexh/Documents/attention_tempresltn/multiple\ object\ tracking/ExperimentsWithWing/speedLimitsAndTargetLoad/allAnalysisForPosting/speed-tf-VSS14/analyseExps")
 require("ggplot2")
 require("plyr")
+require(dplyr)
 dataDir="../data/"
 expName = "data123targets269objects"
 anonDataFilename = paste(dataDir,expName,".Rdata",sep="") 
@@ -64,6 +65,7 @@ for (iv in c("speed","tf","logSpd")) {
 thrTf<-threshes_tf_postVSS_13targets2349objects; thrTf$iv<-"tf"
 
 #Calculate which iv yields the lowest deviance, esp. speed versus logSpd
+print( dplyr::summarise(group_by(fitParmsAll,exp,iv),deviance=mean(deviance)) )
 
 #Some three-quarters threshes are NA
 # exp numObjects numTargets subject thresh
