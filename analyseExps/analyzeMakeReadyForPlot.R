@@ -44,6 +44,37 @@ fitParms <- ddply(dat, factorsPlusSubject, getFitParmsPrintProgress)
 #       Stop setting global variables
 #     Figure out way to pass method thgough to binomfit_limsAlex
 
+#Could use quickpsy, but can't handle different guessing rates in single call.
+#So I'd have to call it separately for each numObjects and then modify plotcurves
+#to get it to plot them all.
+#Also I suspect I'd need to write functions to get thresholds at different levels
+if (useQuickpsy) {
+  library(devtools) #So can load from Alex's local quickpsy package repository
+  #install_github('danilinares/quickpsy')
+  load_all("/Users/alexh/Documents/softwareStatsEquipment/programming_psychophysics/quickpsy/quickpsy")
+  #library('quickpsy')
+  #Create decreasing function to fit
+  negCumNormal<-function(x,p) { cum_normal_fun(-x,p) }
+  #factorsPlusSubject "exp"        "numObjects" "numTargets" "subject" 
+  datDani<-dat  
+  datDani$speed = -1*datDani$speed
+  #craps out because probabilites not within 0 and 1
+  fitCondSubj <- quickpsy(datDani, speed, correct, 
+                          grouping=.(exp,subject,numTargets,numObjects), #factorsPlusSubject,
+                          bootstrap='none', xmin=.1, xmax=2.2,
+                          guess=TRUE #estimate chance performance, although weird
+                          )
+  #craps out because "Error in optim(parini, nllfun) : function cannot be evaluated at initial parameters
+  fitCondSubj <- quickpsy(dat, speed, correct, 
+                          grouping=.(exp,subject), #factorsPlusSubject,
+                          bootstrap='none', xmin=.1, xmax=2.2,
+                          fun=negCumNormal, 
+                          guess=TRUE, #estimate chance performance, although weird
+                          parini = c(1.5,10))
+  plot1 <- plotcurves(fitCondSubj) + theme_bw()
+  quartz(tit); show(plot1)
+}
+
 #prediction tracking two if only can track one. myPlotCurve then calculates it.
 #use the fitted parameters to get the actual curves
 myPlotCurve <- makeMyPlotCurve4(iv,xLims[1],xLims[2]+.5,numPointsForPsychometricCurve)
