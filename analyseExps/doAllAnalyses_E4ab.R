@@ -43,9 +43,15 @@ setdiff(colnames(dat),colnames(datE4))
 dat = rbind(dat,datE4)
 dat$tf<- dat$numObjects*dat$speed
 dat$logSpd<- log(dat$speed)
+fitParmsAll<-list()
+fitParmsAll<-data.frame()
 for (iv in c("speed","tf","logSpd")) {
   cat('Fitting data, extracting threshes, plotting with iv=',iv)
   source('analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
+  fitParms$iv<- iv
+  fitParmsAll<-rbind(fitParmsAll,fitParms)
+  #fitParmsAll[[ iv ]]<- fitParms
+
   #if (iv=="speed") { #if not, don't bother
     source('plotIndividDataWithPsychometricCurves.R')
   #}
@@ -56,6 +62,9 @@ for (iv in c("speed","tf","logSpd")) {
   cat("Saved",varName)
 }
 thrTf<-threshes_tf_postVSS_13targets2349objects; thrTf$iv<-"tf"
+
+#Calculate which iv yields the lowest deviance, esp. speed versus logSpd
+
 #Some three-quarters threshes are NA
 # exp numObjects numTargets subject thresh
 #  4b          4          3      CF     NA      

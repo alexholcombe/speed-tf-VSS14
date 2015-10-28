@@ -41,6 +41,7 @@ dat$subject <- factor(dat$subject)
 
 #tempDat<- subset(dat,numObjects==2 & numTargets==1 & subject=="AH" ) #Does this well now, using penalized.deviance to compare across lapse rates
 fitParms <- ddply(dat, factorsPlusSubject, getFitParmsPrintProgress)
+cat("Mean deviance with iv",iv,"=",mean(fitParms$deviance))
 #To-do. Change psychometrics myCurve to accommodate rescaling based on method
 #       Stop setting global variables
 #     Figure out way to pass method thgough to binomfit_limsAlex
@@ -138,7 +139,7 @@ calcPctCorrThisIvVal <- function(df,iv,val) {
   return (answer)
 }
 
-cat(paste('I give you fitParms, psychometrics, datMeans and function calcPctCorrThisIvVal.'))
+cat(paste(' I give you fitParms, psychometrics, datMeans and function calcPctCorrThisIvVal.'))
 stopifnot(exists("fitParms"))
 stopifnot(exists("psychometrics"))
 stopifnot(exists("datMeans"))

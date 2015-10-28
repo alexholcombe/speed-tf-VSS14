@@ -103,7 +103,6 @@ fitBrglmKludge<- function( df, lapseMinMax, returnAsDataframe, initialMethod, ve
   	else
   		deviances<-c(deviances,fitModel$fit$deviance)
   	addsigma=c(fitModel$b,fitModel$sigma)
-  	#parms= rbind(parms,fitModel$b)
   	parms= rbind(parms,addsigma)
   	predictors=c(predictors,fitModel$fit)
   	# if (!exists(fitModel$fit$method)) #because glmrob doesn't have that field
@@ -126,8 +125,8 @@ fitBrglmKludge<- function( df, lapseMinMax, returnAsDataframe, initialMethod, ve
   notErrored= which(!errored) #list of indexes of lapse rates for which no error
   #of those where did not error, determine which had best fit
   #unfortunately glmrob doesn't provide any deviance measure, so I would have to calculate it myself
+  minDeviance = min( deviances[notErrored] )
   bestIofNotErrored = which.min( deviances[notErrored] )  #index of lowest deviance, among those which converged
-  #cat('bestIofNotErrored=', bestIofNotErrored)
   bestI= notErrored[bestIofNotErrored]
   lapseRate = lapseRates[bestI]
   bestParms = parms[bestI,]
@@ -142,9 +141,9 @@ fitBrglmKludge<- function( df, lapseMinMax, returnAsDataframe, initialMethod, ve
   #cat('method[bestI]=',methods[bestI]," ") #debugOFF
   #cat('linkFxs[bestI]=',linkFxs[bestI]," ") #debugOFF
   if (returnAsDataframe)
-  	dg<- data.frame(mean,slope,chanceRate,lapseRate,sigma,method=methods[bestI],linkFx=linkFxs[bestI],nWarns,nErrs,firstWarn)
+  	dg<- data.frame(mean,slope,chanceRate,lapseRate,sigma,deviance=minDeviance,method=methods[bestI],linkFx=linkFxs[bestI],nWarns,nErrs,firstWarn)
   else  #boot wants only a vector back. Can't handle a dataframe. So, cant pass text warning message back because all vec vals
-  	dg<- cbind(mean,slope,chanceRate,lapseRate,sigma,nWarns,nErrs) #have to be same type
+  	dg<- cbind(mean,slope,chanceRate,lapseRate,sigma,minDeviance,nWarns,nErrs) #have to be same type
   
   if (verbosity>1)
   	cat('exiting fitBrglmKludge with:\n'); print(dg)
