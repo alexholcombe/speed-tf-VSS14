@@ -225,6 +225,7 @@ makeMyPsychoCorr2<- function(iv) { #Very similar to makeMyPlotCurve below, only 
     exampleModel<-suppressWarnings( 
         binomfit_limsAlex(dh$numCorrect, dh$numTrials, dh[,iv], link=as.character(df$linkFx), 
                           guessing=df$chanceRate, lapsing=df$lapseRate, initial=as.character(df$method))  #, tryAlts=FALSE  ) 
+    )
     exampleModel=exampleModel$fit
     #modify example fit, use its predictor only plus parameters I've found by fitting
     exampleModel[1]$coefficients[1] = df$mean
@@ -281,8 +282,9 @@ makeMyPlotCurve4<- function(iv,xmin,xmax,numxs) {#create psychometric curve plot
     df = data.frame(df) #in case it wasn't a dataframe yet
     #set up example model with fake data
     #I don't know why the below didn't work with example01 but it doesn't work
-    dh=data.frame(speed=c(.7,1.0,1.4,1.7,2.2),tf=c(3.0,4.0,5.0,6.0,7.0),
+    dh=data.frame(dummy=seq(3,7), #speed=c(.7,1.0,1.4,1.7,2.2),tf=seq(3,7),
                   numCorrect=c(46,45,35,26,32),numTrials=c(48,48,48,48,49))
+    colnames(dh)[1]<- iv
     dh$lapseRate=df$lapseRate
     #binomfit_limsAlex(df$numCorrect,df$numTrials,df$speed,link=linkf,guessing=chanceRate,lapsing=l,control=cntrl,initial="brglm.fit")
     exampleModel<-suppressWarnings( 

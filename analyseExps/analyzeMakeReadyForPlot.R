@@ -48,6 +48,7 @@ fitParms <- ddply(dat, factorsPlusSubject, getFitParmsPrintProgress)
 #So I'd have to call it separately for each numObjects and then modify plotcurves
 #to get it to plot them all.
 #Also I suspect I'd need to write functions to get thresholds at different levels
+useQuickPsy<-FALSE
 if (useQuickpsy) {
   library(devtools) #So can load from Alex's local quickpsy package repository
   #install_github('danilinares/quickpsy')
