@@ -42,7 +42,8 @@ dat$Hz<-NULL
 setdiff(colnames(dat),colnames(datE4))
 dat = rbind(dat,datE4)
 dat$tf<- dat$numObjects*dat$speed
-for (iv in c("speed","tf")) {
+dat$logSpd<- log(dat$speed)
+for (iv in c("speed","tf","logSpd")) {
   cat('Fitting data, extracting threshes, plotting with iv=',iv)
   source('analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
   #if (iv=="speed") { #if not, don't bother
