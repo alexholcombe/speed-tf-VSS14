@@ -8,6 +8,7 @@ if (varyLapseRate) { lapseMinMax= c(0,0.05) }  else  #range of lapseRates to try
 chanceRate=.5
 factorsForBreakdown = c('exp','numObjects','numTargets')
 xLims=c(.000001,2.6);  if (iv=="tf") {xLims=c(.1,8)} #{xLims=c(.5,8)}
+if (iv=="logSpd") {xLims=c(-2.5,1.2)}
 yLims=c(.3,1.05)
 numPointsForPsychometricCurve=150 #250
 #end global variables expected
@@ -48,7 +49,7 @@ fitParms <- ddply(dat, factorsPlusSubject, getFitParmsPrintProgress)
 #So I'd have to call it separately for each numObjects and then modify plotcurves
 #to get it to plot them all.
 #Also I suspect I'd need to write functions to get thresholds at different levels
-useQuickPsy<-FALSE
+useQuickpsy<-FALSE
 if (useQuickpsy) {
   library(devtools) #So can load from Alex's local quickpsy package repository
   #install_github('danilinares/quickpsy')
@@ -80,7 +81,17 @@ if (useQuickpsy) {
 #use the fitted parameters to get the actual curves
 myPlotCurve <- makeMyPlotCurve4(iv,xLims[1],xLims[2]+.5,numPointsForPsychometricCurve)
 #ddply(fitParms,factorsPlusSubject,function(df) { if (nrow(df)>1) {print(df); STOP} })  #debugOFF
-psychometrics<-ddply(fitParms,factorsPlusSubject,myPlotCurve)  
+psychometrics<-ddply(fitParms,factorsPlusSubject,myPlotCurve)
+if (iv=="logSpd") {
+  psychometrics$speed = 10^psychometrics$logSpd
+}
+if (!("tf" %in% colnames(psychometrics))) { #psychometrics must have been fit to tf
+  psychometrics$tf <- psychometrics$speed * psychometrics$numObjects
+}
+if (!("speed" %in% colnames(psychometrics))) { #psychometrics must have been fit to tf
+  stopifnot("tf" %in% colnames(psychometrics)) #confirm my interpretation that tf was fit
+  psychometrics$speed = psychometrics$tf / psychometrics$numObjects #so can plot them in terms of speed
+}
 
 #Below are just helper functions. Consider migration into a helper function file
 #Usually ggplot with stat_summary will collapse the data into means, but for some plots and analyses can't do it that way.

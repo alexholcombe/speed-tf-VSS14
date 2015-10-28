@@ -1,6 +1,6 @@
 #Variables expected:
 #dat
-#iv - "tf" or "speed"
+#iv - e.g. "tf" or "speed"
 plotTf_as_tf_speed_as_speed <- TRUE #If false, plot speed on horizontal axis even if fit was to TF
 source('helpers/rnc_ggplot2_border_themes_2013_01.r') # Simple extensions for removing graph sides, see http://egret.psychol.cam.ac.uk/statistics/R/extensions/rnc_ggplot2_border_themes_2013_01.r  
 rowsLabeller <- function(variable,value) { #Label facet_grid with "3 deg" instead of "3"
@@ -22,10 +22,6 @@ themeAxisTitleSpaceNoGridLinesLegendBox = theme_classic() + #Remove gridlines, s
         panel.background = element_rect(fill = "transparent",colour = NA),
         plot.background = element_rect(fill = "transparent",colour = NA)   )
 
-if (!("speed" %in% colnames(psychometrics))) { #psychometrics must have been fit to tf
-  stopifnot("tf" %in% colnames(psychometrics)) #confirm my interpretation that tf was fit
-  psychometrics$speed = psychometrics$tf / psychometrics$numObjects #so can plot them in terms of speed
-}
 
 #function, not used, that plots the psychometric functions for a dataset / experiment /criterion,
 plotIndividDataAndCurves <- function(df,psychometricCurves) {
@@ -51,7 +47,7 @@ plotIndividDataAndCurves <- function(df,psychometricCurves) {
 
 if (plotTf_as_tf_speed_as_speed) { abscissa=iv } else 
   { abcissa = "speed" }
-if (abscissa == "speed") { unitsLabel = "(rps)" } else
+if (abscissa=="speed" | abscissa=="logSpd") { unitsLabel = "(rps)" } else
   { unitsLabel = "(Hz)" }
 for ( expThis in sort(unique(dat$exp)) ) {  #draw individual Ss' data, for each experiment
   title<-paste('E',expThis,'_indivSs_',iv,"_fit",sep='')
