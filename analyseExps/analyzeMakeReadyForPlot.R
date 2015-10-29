@@ -7,8 +7,9 @@ if (varyLapseRate) { lapseMinMax= c(0,0.05) }  else  #range of lapseRates to try
 	{ lapseMinMax = c(0.01,0.01) }
 chanceRate=.5
 factorsForBreakdown = c('exp','numObjects','numTargets')
-xLims=c(.001,2.6);  
+xLims=c(.018,2.6);  
 if (iv=="logSpd") {xLims= log(xLims)} #c(-2.5,1.2)}
+if (iv=="log10spd") {xLims= log10(xLims)} #c(-2.5,1.2)}
 if (iv=="tf") {xLims=c(.1,8)} 
 yLims=c(.3,1.05)
 numPointsForPsychometricCurve=150 #250
@@ -87,7 +88,10 @@ myPlotCurve <- makeMyPlotCurve4(iv,xLims[1],xLims[2]+.5,numPointsForPsychometric
 #ddply(fitParms,factorsPlusSubject,function(df) { if (nrow(df)>1) {print(df); STOP} })  #debugOFF
 psychometrics<-ddply(fitParms,factorsPlusSubject,myPlotCurve)
 if (iv=="logSpd") {
-  psychometrics$speed = 10^psychometrics$logSpd
+  psychometrics$speed = exp(1)^psychometrics$logSpd
+}
+if (iv=="log10spd") {
+  psychometrics$speed = 10^psychometrics$log10spd
 }
 if (!("tf" %in% colnames(psychometrics))) { #psychometrics must have been fit to tf
   psychometrics$tf <- psychometrics$speed * psychometrics$numObjects
