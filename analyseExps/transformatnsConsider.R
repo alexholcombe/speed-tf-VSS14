@@ -22,3 +22,8 @@ require(ggplot2)
 g<- ggplot(df, aes(x=x,y=y,color=base) )
 g<-g + geom_point()
 show(g)
+
+#They differ by a multiplicative factor
+subset(df,base=="2")$y / subset(df,base=="10")$y 
+#So they are linear transformation of each other, does that mean that all logs
+#will fit equally well?
