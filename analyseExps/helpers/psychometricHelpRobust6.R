@@ -146,10 +146,10 @@ fitBrglmKludge<- function( df, lapseMinMax, returnAsDataframe, initialMethod, ve
   else  #boot wants only a vector back. Can't handle a dataframe. So, cant pass text warning message back because all vec vals
   	dg<- cbind(mean,slope,chanceRate,lapseRate,sigma,minDeviance,nWarns,nErrs) #have to be same type
   
-  if (verbosity>1)
-  	cat('exiting fitBrglmKludge with:\n')
-  if (verbosity>=0) 
+  if (verbosity>=0) { #print best-fitting parameters
+  	cat('exiting fitBrglmKludge with:')
     print(dg)
+  }
   return( dg )  	#before I had the following which eventually crapped out inside boot return( list(dg,bestPredictor) )  
 }
 

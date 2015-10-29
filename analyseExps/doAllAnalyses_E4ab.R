@@ -46,16 +46,13 @@ dat$tf<- dat$numObjects*dat$speed
 dat$logSpd<- log(dat$speed)
 fitParmsAll<-list()
 fitParmsAll<-data.frame()
+#dat<-subset(dat,exp=="HC2013") #TEMPORARILY ONLY ONE EXPERIMENT
 for (iv in c("speed","tf","logSpd")) {
   cat('Fitting data, extracting threshes, plotting with iv=',iv)
   source('analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
   fitParms$iv<- iv
   fitParmsAll<-rbind(fitParmsAll,fitParms)
-  #fitParmsAll[[ iv ]]<- fitParms
-
-  #if (iv=="speed") { #if not, don't bother
-    source('plotIndividDataWithPsychometricCurves.R')
-  #}
+  source('plotIndividDataWithPsychometricCurves.R')
   source("extractThreshes.R") #provides threshes
   varName=paste("threshes_",iv,"_",expName,sep='') #combine threshes
   assign(varName,threshes)
@@ -65,8 +62,17 @@ for (iv in c("speed","tf","logSpd")) {
 thrTf<-threshes_tf_postVSS_13targets2349objects; thrTf$iv<-"tf"
 
 #Calculate which iv yields the lowest deviance, esp. speed versus logSpd
-print( dplyr::summarise(group_by(fitParmsAll,exp,iv),deviance=mean(deviance)) )
-Mean deviance with iv logSpd = 5.94791
+#Speed and tf are equivalent because iv differs by a constant (uniformity of slope might differ)
+#How much does quality of fit (deviance) and slopes differ for the three fits?
+compare<- dplyr::summarise(group_by(fitParmsAll,exp,iv), deviance=mean(deviance),
+                          slop=mean(slope), slopeMAD=mean( abs(slope-mean(slope)) ) )
+slopeCompare$proportn <- abs( slopeCompare$slopeMAD/slopeCompare$slop )
+#Speed/TF wins for 4a and 4b, logSpd wins for HC2013 but not by much
+#No clear pattern in slopes
+
+speed = 4.857328
+tf = 4.857328 #Maybe these are equivalent because they are multiplied by a constant?
+Mean deviance with iv logSpd = 4.394615
 
 #Some three-quarters threshes are NA
 # exp numObjects numTargets subject thresh
