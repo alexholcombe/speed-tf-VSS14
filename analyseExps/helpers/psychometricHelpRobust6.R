@@ -62,7 +62,7 @@ fitBrglmKludge<- function( df, lapseMinMax, returnAsDataframe, initialMethod, ve
 	  cntrl = list(epsilon=1e-6,maxit=10000) 
     iv <- df[,1] #assume first column is independent variable, be it speed or be it tf
 	  #problem below is that if warning occurs, we don't get the value returned because of error-catching stupidity
-  	fitModel<-countWarnings( 
+  	fitModel<- countWarnings( 
   				binomfit_limsAlex(df$numCorrect,df$numTrials,iv,link="logit",
   				                  guessing=chanceRate,lapsing=l,control=cntrl,initial=initialMethod)
   			  ) 
@@ -84,7 +84,7 @@ fitBrglmKludge<- function( df, lapseMinMax, returnAsDataframe, initialMethod, ve
 	  	warnMsgs<-c(warnMsgs,firstWarnMsg)	  	
   	} else warned<-c(warned,FALSE)
   	
-  	if(is(fitModel,"error")) { 
+  	if (is(fitModel,"error")) { 
   		errored=c(errored,TRUE); print(fitModel)   		
   	}  else errored=c(errored,FALSE)
 
@@ -141,12 +141,15 @@ fitBrglmKludge<- function( df, lapseMinMax, returnAsDataframe, initialMethod, ve
   #cat('method[bestI]=',methods[bestI]," ") #debugOFF
   #cat('linkFxs[bestI]=',linkFxs[bestI]," ") #debugOFF
   if (returnAsDataframe)
-  	dg<- data.frame(mean,slope,chanceRate,lapseRate,sigma,deviance=minDeviance,method=methods[bestI],linkFx=linkFxs[bestI],nWarns,nErrs,firstWarn)
+  	dg<- data.frame(mean,slope,chanceRate,lapseRate,sigma,deviance=minDeviance,method=methods[bestI],
+  	                linkFx=linkFxs[bestI],nWarns,nErrs,firstWarn)
   else  #boot wants only a vector back. Can't handle a dataframe. So, cant pass text warning message back because all vec vals
   	dg<- cbind(mean,slope,chanceRate,lapseRate,sigma,minDeviance,nWarns,nErrs) #have to be same type
   
   if (verbosity>1)
-  	cat('exiting fitBrglmKludge with:\n'); print(dg)
+  	cat('exiting fitBrglmKludge with:\n')
+  if (verbosity>=0) 
+    print(dg)
   return( dg )  	#before I had the following which eventually crapped out inside boot return( list(dg,bestPredictor) )  
 }
 
@@ -172,7 +175,7 @@ makeParamFit <- function(iv, lapseMinMax, initialMethod, verbosity=0) {
     #assuming there's no other factors to worry about
     sumry = ddply(df,iv,summarizNumTrials) #also calculates chanceRate
   	#curveFit(sumry$speed,sumry$correct,sumry$numTrials,subjectname,lapsePriors,meanPriors,widthPriors,'MAPEstimation')  
-	returnAsDataframe=TRUE #this allows keeping the text of the warning messages. (Boot can't do this)
+	  returnAsDataframe=TRUE #this allows keeping the text of the warning messages. (Boot can't do this)
   	fitParms = fitBrglmKludge(sumry,lapseMinMax, returnAsDataframe,initialMethod,verbosity)
   	#print( paste('fitParms=',fitParms) )
   	return( fitParms )
@@ -321,7 +324,7 @@ makeMyThreshGetNumerically<- function(iv,threshCriterion) {#create function that
       return( data.frame(thresh=threshSlop$x_th, slopeThisCrit=threshSlop$slope, error=FALSE) )
     }, 
                     error = function(e) {
-                      cat("\nERROR occurred with")  
+                      cat("\nERROR occurred with ")  
                       if ("separatnDeg" %in% names(df))
                         cat(paste(' separatnDeg=',df$separatnDeg[1]),' ') #debugON
                       if ("exp" %in% names(df))

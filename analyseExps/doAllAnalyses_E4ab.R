@@ -66,6 +66,7 @@ thrTf<-threshes_tf_postVSS_13targets2349objects; thrTf$iv<-"tf"
 
 #Calculate which iv yields the lowest deviance, esp. speed versus logSpd
 print( dplyr::summarise(group_by(fitParmsAll,exp,iv),deviance=mean(deviance)) )
+Mean deviance with iv logSpd = 5.94791
 
 #Some three-quarters threshes are NA
 # exp numObjects numTargets subject thresh

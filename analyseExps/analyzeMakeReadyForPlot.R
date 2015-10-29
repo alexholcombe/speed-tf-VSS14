@@ -12,7 +12,7 @@ if (iv=="logSpd") {xLims=c(-2.5,1.2)}
 yLims=c(.3,1.05)
 numPointsForPsychometricCurve=150 #250
 #end global variables expected
-verbosity=0 #0-don't print much debugging stuff, 1 prints more, and 2 even more
+verbosity=-1 #-1 don't print progress, 0-don't print much debugging stuff, 1 prints more, and 2 even more
 
 colrFactr = paste('factor(',factorsForBreakdown[1],')',sep='')
 if ( length(factorsForBreakdown)>1 ) 
@@ -30,10 +30,12 @@ factorsPlusSubject[ length(factorsForBreakdown)+1 ]<- "subject"
 initialMethod<-"brglm.fit"  # "glmCustomlink" #  
 getFitParms <- makeParamFit(iv,lapseMinMax,initialMethod,verbosity) #use resulting function for one-shot curvefitting
 getFitParmsPrintProgress <- function(df) {  #So I can see which fits yielded a warning, print out what was fitting first.
-  cat("Finding best fit (calling fitParms) for")
-  for (i in 1:length(factorsPlusSubject) ) #Using a loop print them all on one line
-    cat( paste( factorsPlusSubject[i],"=",df[1,factorsPlusSubject[i]])," " )
-  cat("\n")
+  if (verbosity > -1) {
+    cat("Finding best fit (calling fitParms) for")
+    for (i in 1:length(factorsPlusSubject) ) #Using a loop print them all on one line
+      cat( paste( factorsPlusSubject[i],"=",df[1,factorsPlusSubject[i]])," " )
+    cat("\n")
+  }
   #print( df[1,factorsPlusSubject] ) #one-line commmand, but breaks across lines
   return( getFitParms(df) )
 }

@@ -174,42 +174,29 @@ unscale0to1 <- function(regressnOutput,chanceRate,lapseRate)
 
 binomfit_limsAlex <- function(r,m,x,p=1, link="logit", guessing=0, lapsing=0, K=2,
 								control=list(),initial="brglm.fit",tryOthers=TRUE) {
-
 #
-
 # The function fits a binomial generalised linear model with fixed guessing and lapsing rates.
-
 # It is based closely on a function of similar name in the modelfree package
 # INPUT
-
 #
 # r    - number of successes at points x
 # m    - number of trials at points x 
 # x    - stimulus levels
 #
-
 # OPTIONAL INPUT
-
 #
-
 # p    - degree of the polynomial; default is p = 1 
-
 # link - name of the link function; default is "logit"
-
 # guessing - guessing rate; default is 0
 # lapsing  - lapsing rate; default is 0
 # K    - power parameter for Weibull and reverse Weibull link; default is 2
 # control - control parameters to pass to fitting algorithm
-
 # initial - initial fitting method to try, "brglm.fit", "glmrob", "glmCustomlink", or "glm.fit"
-
 # OUTPUT
 # 
 # Object with 2 components: 
 # b - vector of estiamted coefficients for the linear part 
 # fit - glm object to be used in evaluation of fitted values
-
-
 # MAIN PROGRAM
 
 # First 3 arguments are mandatory
@@ -285,8 +272,6 @@ binomfit_limsAlex <- function(r,m,x,p=1, link="logit", guessing=0, lapsing=0, K=
 
 
    if( linkfun != "weibull_link_private" && linkfun != "revweibull_link_private" ) {
-
-    	
     	handleErr <- function(e) {
     		eventType = class(e)[2]
     		cat(paste(eventType,"in AH function '", e$call, "': '",e$message,"'\n"))
@@ -332,14 +317,14 @@ binomfit_limsAlex <- function(r,m,x,p=1, link="logit", guessing=0, lapsing=0, K=
     	{   
     		cat("Due to previous failure of method",method,", trying conventional glm") #debugON
     		stop("temp error to be removed!") #debugON
-    	    ctrl<-glm.control(maxit=1000,trace=FALSE)
-    	    assign("last.warning", NULL, envir = baseenv())  #clear warnings buffer 
+    	  ctrl<-glm.control(maxit=1000,trace=FALSE)
+    	  assign("last.warning", NULL, envir = baseenv())  #clear warnings buffer 
   			fit = glm( glmformula, data = glmdata, weights = m, 
   					   family = binomial( eval( call( linkfun, guessing, lapsing ) ) ),x=T,y=T,control=ctrl )
-        	numWarnings=length(warnings())
-			if (numWarnings>0){ 
+        numWarnings=length(warnings())
+			  if (numWarnings>0){ 
 	    			print("binomfit_limsAlex glm warnings:"); print(warnings())
-			}                    
+			  }                    
     	}
     	if (is.null(fit) | class(fit)[2]=="error" & tryOthers) #we'll have to try another algorithm
     	{   
@@ -356,7 +341,7 @@ binomfit_limsAlex <- function(r,m,x,p=1, link="logit", guessing=0, lapsing=0, K=
   			fit = glm( glmformula, data = glmdata, weights = m, family = 
   						binomial( eval( call( linkfun, guessing, lapsing ) ) ),x=T,y=T,control=ctrl )    
         	numWarnings=length(warnings())
-			if(numWarnings>0){ 
+			  if(numWarnings>0){ 
 	    		cat(paste("binomfit_limsAlex glm(",altLink," warnings:")); print(warnings())
 			}                    
     	} 	    
