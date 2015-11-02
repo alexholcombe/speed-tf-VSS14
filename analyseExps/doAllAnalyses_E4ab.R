@@ -43,11 +43,12 @@ dat$Hz<-NULL
 setdiff(colnames(dat),colnames(datE4))
 dat = rbind(dat,datE4)
 dat$tf<- dat$numObjects*dat$speed
-dat$logSpd<- log(dat$speed); dat$log10spd<- log10(dat$speed)
+dat$logSpd<- log(dat$speed); 
+dat$invSpd<- -1*dat$speed^(-0.3)
 fitParmsAll<-list()
 fitParmsAll<-data.frame()
 #dat<-subset(dat,exp=="HC2013") #TEMPORARILY ONLY ONE EXPERIMENT
-for (iv in c("speed","tf","logSpd","log10spd")) {
+for (iv in c("speed","invSpd","tf","logSpd")) {
   cat('Fitting data, extracting threshes, plotting with iv=',iv)
   source('analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
   fitParms$iv<- iv
@@ -66,8 +67,8 @@ thrTf<-threshes_tf_postVSS_13targets2349objects; thrTf$iv<-"tf"
 #How much does quality of fit (deviance) and slopes differ for the three fits?
 compare<- dplyr::summarise(group_by(fitParmsAll,exp,iv), deviance=mean(deviance),
                           slop=mean(slope), slopeMAD=mean( abs(slope-mean(slope)) ) )
-slopeCompare$proportn <- abs( slopeCompare$slopeMAD/slopeCompare$slop )
 #Speed/TF wins for 4a and 4b, logSpd wins for HC2013 but not by much
+#Also tried -x^-0.3, that wins for none of the experiments.
 #No clear pattern in slopes
 
 speed = 4.857328

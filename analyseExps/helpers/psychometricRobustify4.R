@@ -200,22 +200,15 @@ binomfit_limsAlex <- function(r,m,x,p=1, link="logit", guessing=0, lapsing=0, K=
 # MAIN PROGRAM
 
 # First 3 arguments are mandatory
-
-    # First 3 arguments are mandatory
     if( missing("x") || missing("r") || missing("m") ) {
         stop("Check input. First 3 arguments are mandatory");
     }
 
 # CHECK ROBUSTNESS OF INPUT PARAMETERS
-
     checkdata<-list();
-
     checkdata[[1]] <- x;
-
     checkdata[[2]] <- r
-
     checkdata[[3]] <- m
-
     checkinput( "psychometricdata", checkdata );
 
     rm( checkdata )
@@ -245,21 +238,13 @@ binomfit_limsAlex <- function(r,m,x,p=1, link="logit", guessing=0, lapsing=0, K=
 
 
 # formula
-
     glmformula <- c( "resp ~ x" );
-
     if( p > 1 ) {
-
         for( pp in 2:p ) {
-
             glmformula <- paste( glmformula, " + I(x^", pp,")", sep = "");
-
         }
-
     }
-
     fit <- NULL;
-
 
 
 # GLM fit
