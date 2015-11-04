@@ -43,10 +43,9 @@ dat$Hz<-NULL
 setdiff(colnames(dat),colnames(datE4))
 dat = rbind(dat,datE4)
 dat$tf<- dat$numObjects*dat$speed
-dat$logSpd<- log(dat$speed); dat$logTf<- log(dat$logTf); 
+dat$logSpd<- log(dat$speed); dat$logTf<- log(dat$tf); 
 dat$invSpd<- -1*dat$speed^(-0.3)
-fitParmsAll<-list()
-fitParmsAll<-data.frame()
+fitParmsAll<-data.frame(); thrAll<-data.frame()
 #dat<-subset(dat,exp=="HC2013") #Temporarily only one experiment
 for (iv in c("logTf","speed","logSpd","tf")) {
   cat('Fitting data, extracting threshes, plotting with iv=',iv)
@@ -55,17 +54,20 @@ for (iv in c("logTf","speed","logSpd","tf")) {
   fitParmsAll<-rbind(fitParmsAll,fitParms)
   source('plotIndividDataWithPsychometricCurves.R')
   source("extractThreshes.R") #provides threshes
+  thrAll<-rbind(thrAll,threshes)
+  #below is old way, saving separate threshes
   varName=paste("threshes_",iv,"_",expName,sep='') #combine threshes
   assign(varName,threshes)
   save(list=varName,file=paste(dataDir,varName,".Rdata",sep='')) #e.g. threshes_tf_123targets269objects.Rdata
   cat("Saved",varName)
 }
+save(thrAll,file=paste(dataDir,".Rdata",sep=''))
 thrTf<-threshes_tf_postVSS_13targets2349objects; thrTf$iv<-"tf"
 
 #Calculate which iv yields the lowest deviance, esp. speed versus logSpd
 #Speed and tf are equivalent because iv differs by a constant (uniformity of slope might differ)
 #How much does quality of fit (deviance) and slopes differ for the three fits?
-compare<- dplyr::summarise(group_by(fitParmsAll,exp,iv), deviance=mean(deviance),
+compareFitQuality<- dplyr::summarise(group_by(fitParmsAll,exp,iv), deviance=mean(deviance),
                           slop=mean(slope), slopeMAD=mean( abs(slope-mean(slope)) ) )
 #Speed/TF wins for 4a and 4b, logSpd wins for HC2013 but not by much
 #Also tried -x^-0.3, that wins for none of the experiments.
@@ -76,7 +78,8 @@ compare<- dplyr::summarise(group_by(fitParmsAll,exp,iv), deviance=mean(deviance)
 #  4b          4          3      CF     NA      
 #HC2013       12          3      PB     NA     
 #HC2013       12          3      SM     NA 
-
+fitFailed<- subset(
+  
 thrTF_wtf<- subset(thrTf,criterionNote=="threeQuarters")
 subset(thrTF_wtf, is.na(thresh))
        
