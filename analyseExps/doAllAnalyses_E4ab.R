@@ -56,10 +56,10 @@ for (iv in c("logTf","speed","logSpd","tf")) {
   source("extractThreshes.R") #provides threshes
   thrAll<-rbind(thrAll,threshes)
   #below is old way, saving separate threshes
-  varName=paste("threshes_",iv,"_",expName,sep='') #combine threshes
-  assign(varName,threshes)
-  save(list=varName,file=paste(dataDir,varName,".Rdata",sep='')) #e.g. threshes_tf_123targets269objects.Rdata
-  cat("Saved",varName)
+#   varName=paste("threshes_",iv,"_",expName,sep='') #combine threshes
+#   assign(varName,threshes)
+#   save(list=varName,file=paste(dataDir,varName,".Rdata",sep='')) #e.g. threshes_tf_123targets269objects.Rdata
+#   cat("Saved",varName)
 }
 save(thrAll,file=paste(dataDir,".Rdata",sep=''))
 thrTf<-threshes_tf_postVSS_13targets2349objects; thrTf$iv<-"tf"
@@ -73,18 +73,24 @@ compareFitQuality<- dplyr::summarise(group_by(fitParmsAll,exp,iv), deviance=mean
 #Also tried -x^-0.3, that wins for none of the experiments.
 #No clear pattern in slopes
 
-#Some three-quarters threshes are NA
-# exp numObjects numTargets subject thresh
-#  4b          4          3      CF     NA      
-#HC2013       12          3      PB     NA     
-#HC2013       12          3      SM     NA 
-fitFailed<- subset(
-  
-thrTF_wtf<- subset(thrTf,criterionNote=="threeQuarters")
-subset(thrTF_wtf, is.na(thresh))
-       
-thrSp<-threshes_speed_postVSS_13targets2349objects; thrSp$iv<-"speed"
-thr<- rbind(thrTf,thrSp)
+
+threeQuarters<- subset(thrAll,criterionNote=="threeQuarters")
+fitFailedThreeQuarters<- subset(threeQuarters,is.na(thresh))
+if (nrow(fitFailedThreeQuarters) >0) {
+  cat("Fit failed for threeQuarters in these instances:"); print(fitFailedThreeQuarters)
+}
+threshNegThreeQuarters<- subset(threeQuarters, thresh<=0)
+#of course log iv's are negative
+threshNegThreeQuarters<- subset(threshNegThreeQuarters, iv!="logSpd" & iv!="logTf")
+if ( nrow(threshNegThreeQuarters)>0 ) {
+  cat("Threshes came out negative for:")
+  table(threshNegThreeQuarters$iv,threshNegThreeQuarters$exp) #a few speed
+  # exp numObjects numTargets subject thresh
+  #  4b          4          3      CF     NA      
+  #HC2013       12          3      PB     NA     
+  #HC2013       12          3      SM     NA 
+  cat("So will use log iv's")
+}
 source("makePlots.R")
 
 #source analyseSlopes?

@@ -7,12 +7,12 @@ if (varyLapseRate) { lapseMinMax= c(0,0.05) }  else  #range of lapseRates to try
 	{ lapseMinMax = c(0.01,0.01) }
 chanceRate=.5
 factorsForBreakdown = c('exp','numObjects','numTargets')
-xLims=c(.018,2.6)
+xLims=c(.021,2.6)
 if (iv=="speed") { xLims= c(-.3,2.6) } #Have to go negative to fit some Ss in HC2013!
 if (iv=="logSpd") {xLims= log(xLims)} #c(-2.5,1.2)}
 if (iv=="invSpd") {xLims= -1*xLims^(-0.3)} #c(-2.5,1.2)}
 tfLims<- c(.1,8)
-if (iv=="tf") { xLims=tfLims }
+if (iv=="tf") { xLims=c(-.3,8) } #negative because 2 Ss in HC2013 and 1 in 4b
 if (iv=="logTf") { xLims=log(tfLims) } #c(-2.5,1.2)}
 
 yLims=c(.3,1.05)

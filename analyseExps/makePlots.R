@@ -1,6 +1,7 @@
 #Intended to be called by doAllAnalyses_e4ab.R, which 
 #variables expected:
-#thr containing thresholds
+#thrAll containing thresholds
+thr<-thrAll
 infoMsg=paste0(iv,"-fit")
 lapseMsg=""
 if (!varyLapseRate)
