@@ -47,8 +47,8 @@ dat$logSpd<- log(dat$speed);
 dat$invSpd<- -1*dat$speed^(-0.3)
 fitParmsAll<-list()
 fitParmsAll<-data.frame()
-#dat<-subset(dat,exp=="HC2013") #TEMPORARILY ONLY ONE EXPERIMENT
-for (iv in c("speed","invSpd","tf","logSpd")) {
+#dat<-subset(dat,exp=="HC2013") #Temporarily only one experiment
+for (iv in c("speed","logSpd","tf","logTf")) {
   cat('Fitting data, extracting threshes, plotting with iv=',iv)
   source('analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
   fitParms$iv<- iv
@@ -70,10 +70,6 @@ compare<- dplyr::summarise(group_by(fitParmsAll,exp,iv), deviance=mean(deviance)
 #Speed/TF wins for 4a and 4b, logSpd wins for HC2013 but not by much
 #Also tried -x^-0.3, that wins for none of the experiments.
 #No clear pattern in slopes
-
-speed = 4.857328
-tf = 4.857328 #Maybe these are equivalent because they are multiplied by a constant?
-Mean deviance with iv logSpd = 4.394615
 
 #Some three-quarters threshes are NA
 # exp numObjects numTargets subject thresh

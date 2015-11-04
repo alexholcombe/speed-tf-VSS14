@@ -7,10 +7,14 @@ if (varyLapseRate) { lapseMinMax= c(0,0.05) }  else  #range of lapseRates to try
 	{ lapseMinMax = c(0.01,0.01) }
 chanceRate=.5
 factorsForBreakdown = c('exp','numObjects','numTargets')
-xLims=c(.018,2.6);  
+xLims=c(.018,2.6)
+if (iv=="speed") { xLims= c(-.3,2.6) } #Have to go negative to fit some Ss in HC2013!
 if (iv=="logSpd") {xLims= log(xLims)} #c(-2.5,1.2)}
 if (iv=="invSpd") {xLims= -1*xLims^(-0.3)} #c(-2.5,1.2)}
-if (iv=="tf") {xLims=c(.1,8)} 
+tfLims<- c(.1,8)
+if (iv=="tf") { xLims=tfLims }
+if (iv=="logTf") { xLims=log(tfLims) } #c(-2.5,1.2)}
+
 yLims=c(.3,1.05)
 numPointsForPsychometricCurve=150 #250
 #end global variables expected
@@ -29,7 +33,7 @@ factorsPlusSubject<-factorsForBreakdown
 factorsPlusSubject[ length(factorsForBreakdown)+1 ]<- "subject"
 
 #fit psychometric functions to data ########################################
-initialMethod<-"brglm.fit"  # "glmCustomlink" #  
+initialMethod<-"brglm.fit" # "glmrob"  # "glmCustomlink" #  
 getFitParms <- makeParamFit(iv,lapseMinMax,initialMethod,verbosity) #use resulting function for one-shot curvefitting
 getFitParmsPrintProgress <- function(df) {  #So I can see which fits yielded a warning, print out what was fitting first.
   if (verbosity > -1) {
@@ -92,6 +96,9 @@ if (iv=="logSpd") {
 }
 if (iv=="invSpd") { #invert transformation to recover speed
   psychometrics$speed= -psychometrics$invSpd^(1 - 0.3)
+}
+if (iv=="logTf") { #invert transformation to recover tf
+  psychometrics$tf= exp(1)^psychometrics$logTf
 }
 if (!("tf" %in% colnames(psychometrics))) { #psychometrics must have been fit to tf
   psychometrics$tf <- psychometrics$speed * psychometrics$numObjects

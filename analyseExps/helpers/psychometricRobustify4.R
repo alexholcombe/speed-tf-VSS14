@@ -227,15 +227,11 @@ binomfit_limsAlex <- function(r,m,x,p=1, link="logit", guessing=0, lapsing=0, K=
 		stop(paste("Unexpected value of initial-",initial))
 
 # GLM settings
-
     glmdata <- data.frame( cbind( r/m , m , x ) );
-
     names( glmdata ) <- c( "resp", "m", "x" );
     #to pass list of parameters to function accepting only individual named parameters, must use do.call
-
    	ctrl<- do.call("glm.control",control)
    	cntrl.brglm<- do.call("brglm.control",control) 
-
 
 # formula
     glmformula <- c( "resp ~ x" );
@@ -254,7 +250,6 @@ binomfit_limsAlex <- function(r,m,x,p=1, link="logit", guessing=0, lapsing=0, K=
      }  else {
                linkfun <- paste( link, "_link_private", sep = "" );
               }
-
 
    if( linkfun != "weibull_link_private" && linkfun != "revweibull_link_private" ) {
     	handleErr <- function(e) {
@@ -285,16 +280,16 @@ binomfit_limsAlex <- function(r,m,x,p=1, link="logit", guessing=0, lapsing=0, K=
 	}
 	if (method=="glmrob") {
 	 	print("Trying glmrob robust")
-	 	stop("glmrob not supported for multiple lapse rates, because doesn't provide deviance to compare, 
+	 	warning("glmrob not supported for multiple lapse rates, because doesn't provide deviance to compare, 
 	 	       you'll have to add code to calculate it manually")
 		linkfunRobust="logit_link" #seems better than logit_link_private but dunno why
-	   	ctrl<-glmrobMqle.control(maxit=1000) 
-	   	assign("last.warning", NULL, envir = baseenv())  #clear warnings buffer  
+	  ctrl<-glmrobMqle.control(maxit=1000) 
+	  assign("last.warning", NULL, envir = baseenv())  #clear warnings buffer  
 	 	#Need to fix below to take into account guessing and lapsing rates
 	 	fit<- glmrob( glmformula, data = glmdata, weights=m, family=binomial( link="logit" ),x=T,y=T,control=ctrl )  	
-	    #unfortunately, glmrob doesn't return deviance, so no way to compare it with other methods
-	    #About not returning deviance: https://stat.ethz.ch/pipermail/r-sig-robust/2010/000308.html
-	    #that's why I have to test for is.null(fit$call)
+	  #unfortunately, glmrob doesn't return deviance, so no way to compare it with other methods
+	  #About not returning deviance: https://stat.ethz.ch/pipermail/r-sig-robust/2010/000308.html
+	  #that's why I have to test for is.null(fit$call)
 	} 	
 	
 	#test whether need to try another algorithm because above fit attempt crapped out

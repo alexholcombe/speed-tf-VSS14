@@ -124,10 +124,16 @@ fitBrglmKludge<- function( df, lapseMinMax, returnAsDataframe, initialMethod, ve
   
   notErrored= which(!errored) #list of indexes of lapse rates for which no error
   #of those where did not error, determine which had best fit
-  #unfortunately glmrob doesn't provide any deviance measure, so I would have to calculate it myself
-  minDeviance = min( deviances[notErrored] )
-  bestIofNotErrored = which.min( deviances[notErrored] )  #index of lowest deviance, among those which converged
-  bestI= notErrored[bestIofNotErrored]
+  #glmrob deliberately doesn't provide any deviance measure, so I would have to calculate it myself
+  if (initialMethod=="glmrob") {
+   if ( length(lapseRates)>1 ) 
+    stop("You can't use glmrob with multiple lapse rates because no deviance available") 
+   else { minDeviance = 999; bestI=1; } #dummy deviance value
+  } else {
+    minDeviance = min( deviances[notErrored] )
+    bestIofNotErrored = which.min( deviances[notErrored] )  #index of lowest deviance, among those which converged
+    bestI= notErrored[bestIofNotErrored]
+  }
   lapseRate = lapseRates[bestI]
   bestParms = parms[bestI,]
   bestPredictor = predictors[bestI]
@@ -140,6 +146,7 @@ fitBrglmKludge<- function( df, lapseMinMax, returnAsDataframe, initialMethod, ve
   else firstWarn<- warnMsgs[[1]]
   #cat('method[bestI]=',methods[bestI]," ") #debugOFF
   #cat('linkFxs[bestI]=',linkFxs[bestI]," ") #debugOFF
+  #cat("minDeviance=",minDeviance, "methods[bestI]=",methods[bestI]) #,"linkFxs[bestI)
   if (returnAsDataframe)
   	dg<- data.frame(mean,slope,chanceRate,lapseRate,sigma,deviance=minDeviance,method=methods[bestI],
   	                linkFx=linkFxs[bestI],nWarns,nErrs,firstWarn)
