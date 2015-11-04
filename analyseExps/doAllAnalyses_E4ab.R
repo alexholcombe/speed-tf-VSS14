@@ -43,12 +43,12 @@ dat$Hz<-NULL
 setdiff(colnames(dat),colnames(datE4))
 dat = rbind(dat,datE4)
 dat$tf<- dat$numObjects*dat$speed
-dat$logSpd<- log(dat$speed); 
+dat$logSpd<- log(dat$speed); dat$logTf<- log(dat$logTf); 
 dat$invSpd<- -1*dat$speed^(-0.3)
 fitParmsAll<-list()
 fitParmsAll<-data.frame()
 #dat<-subset(dat,exp=="HC2013") #Temporarily only one experiment
-for (iv in c("speed","logSpd","tf","logTf")) {
+for (iv in c("logTf","speed","logSpd","tf")) {
   cat('Fitting data, extracting threshes, plotting with iv=',iv)
   source('analyzeMakeReadyForPlot.R') #returns fitParms, psychometrics, and function calcPctCorrThisSpeed
   fitParms$iv<- iv
