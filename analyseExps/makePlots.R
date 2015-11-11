@@ -2,7 +2,7 @@
 #variables expected:
 #thrAll containing thresholds
 thr<-thrAll
-infoMsg=paste0(iv,"-fit")
+infoMsg<-""
 lapseMsg=""
 if (!varyLapseRate)
   lapseMsg=paste("lapseRate always",unique(lapseMinMax))
@@ -20,7 +20,7 @@ themeAxisTitleSpaceNoGridLinesLegendBox = theme_classic() + #Remove gridlines, s
 expNames<- paste0( unique(threshes$exp), collapse="" )
 #############################################Plot mean tf,speed threshes against distractors
 tit<-paste0(expNames,'_MeanAgainstDistractors_',infoMsg,'_threeQuarterThresh') 
-quartz(title=tit,width=6,height=3.2) #create graph of threshes
+quartz(title=tit,width=6,height=6) #create graph of threshes with all iv's
 thr$objects <- as.numeric(thr$numObjects) #Otherwise can't connect with lines
 thr$targets <- as.factor(thr$numTargets) 
 d<-subset(thr,criterionNote=="threeQuarters") # & exp!="HC2013")
@@ -36,13 +36,30 @@ dodgeWidth<-.25
 h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeWidth))
 h<-h+ stat_summary(fun.y=mean,geom="line",position=position_dodge(width=dodgeWidth))
 h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeWidth)) 
-h<-h+ylab('Hz                       rps    ')  #ylab('tf (Hz)        speed (rps)')
 h<-h+theme(panel.margin=unit(.04, "npc"))
 h<-h+theme(axis.text=element_text(size=8), axis.title=element_text(size=10)) #default text was too big
 h<-h+ggtitle(paste("5,8 difft validates t.f. limit. Speed limits vary widely",lapseMsg))
 #h<-h+coord_cartesian(ylim=c(1.5,2.5)) #have to use coord_cartesian here instead of naked ylim() to don't lose part of threshline
 show(h) #http://stackoverflow.com/questions/7455046/how-to-make-graphics-with-transparent-background-in-r-using-ggplot2?rq=1
 ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
+###Contrast only tf and speed
+#Show the speed domain with a different contrast, or
+#Maybe don't connect the 2,3 data with larger numbers of objects. And use squares instead of circles
+tit<-paste0(expNames,'_MeanAgainstDistractors_',"tf_speed",'_threeQuarterThresh') 
+quartz(title=tit,width=6,height=3.2) #create graph of threshes with all iv's
+#I need a larger vertical spacing between the panels.
+thrTfSpd<- subset(thr, iv=="speed" | iv=="tf")
+thrTfSpdMoreThan3<- subset(thrTfSpd, numObjects>3)
+k<-h %+% thrTfSpdMoreThan3
+k<-k+ylab(' Hz                    rps  ')  #ylab('tf (Hz)        speed (rps)')
+#Now add the <=3 objects conditions back in, as squares
+thrTfSpd2and3<- subset(thrTfSpd, numObjects<=3)
+k<-k+stat_summary(data=thrTfSpd2and3, fun.y=mean,geom="point")
+k<-k+ stat_summary(data=thrTfSpd2and3,fun.y=mean,geom="line")
+k<-k+stat_summary(data=thrTfSpd2and3,fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95) 
+show(k)
+ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
+
 ####vertically arrayed. Won't work because the two columns (rps vs. Hz) need different y-axes
 #which you can't do in ggplot. Anyway, it looks like crap because the rps numbers are so much 
 #lower than the Hz numbers.

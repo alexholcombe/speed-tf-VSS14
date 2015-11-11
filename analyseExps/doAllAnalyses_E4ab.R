@@ -72,14 +72,13 @@ compareFitQuality<- dplyr::summarise(group_by(fitParmsAll,exp,iv), deviance=mean
 #Also tried -x^-0.3, that wins for none of the experiments.
 #No clear pattern in slopes
 
-
 threeQuarters<- subset(thrAll,criterionNote=="threeQuarters")
 fitFailedThreeQuarters<- subset(threeQuarters,is.na(thresh))
 if (nrow(fitFailedThreeQuarters) >0) {
   cat("Fit failed for threeQuarters in these instances:"); print(fitFailedThreeQuarters)
 }
 threshNegThreeQuarters<- subset(threeQuarters, thresh<=0)
-#of course log iv's are negative
+#Of course log iv's are negative, so don't worry about those
 threshNegThreeQuarters<- subset(threshNegThreeQuarters, iv!="logSpd" & iv!="logTf")
 if ( nrow(threshNegThreeQuarters)>0 ) {
   cat("Threshes came out negative for:")
