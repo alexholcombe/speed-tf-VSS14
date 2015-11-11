@@ -61,8 +61,7 @@ for (iv in c("logTf","speed","logSpd","tf")) {
 #   save(list=varName,file=paste(dataDir,varName,".Rdata",sep='')) #e.g. threshes_tf_123targets269objects.Rdata
 #   cat("Saved",varName)
 }
-save(thrAll,file=paste(dataDir,".Rdata",sep=''))
-thrTf<-threshes_tf_postVSS_13targets2349objects; thrTf$iv<-"tf"
+save(thrAll,file=paste(dataDir,"thrAll.Rdata",sep=''))
 
 #Calculate which iv yields the lowest deviance, esp. speed versus logSpd
 #Speed and tf are equivalent because iv differs by a constant (uniformity of slope might differ)

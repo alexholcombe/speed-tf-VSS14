@@ -21,12 +21,11 @@ expNames<- paste0( unique(threshes$exp), collapse="" )
 #############################################Plot mean tf,speed threshes against distractors
 tit<-paste0(expNames,'_MeanAgainstDistractors_',infoMsg,'_threeQuarterThresh') 
 quartz(title=tit,width=6,height=3.2) #create graph of threshes
-#quartz(title=tit,width=5.7,height=3) #create graph of threshes
 thr$objects <- as.numeric(thr$numObjects) #Otherwise can't connect with lines
 thr$targets <- as.factor(thr$numTargets) 
 d<-subset(thr,criterionNote=="threeQuarters") # & exp!="HC2013")
 d$iv<-as.factor(d$iv)
-levels(d$iv) <- c(" ", "  ") #don't show tf, speed facet labels because implied by ylab
+#levels(d$iv) <- c(" ", "  ") #don't show tf, speed facet labels because implied by ylab
 h<-ggplot(data=d, aes(x=objects,y=thresh,color=targets)) 
 h<-h+facet_grid(iv ~ exp, scales="free_y") #"free_y")  
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
