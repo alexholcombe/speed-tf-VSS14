@@ -19,24 +19,24 @@ themeAxisTitleSpaceNoGridLinesLegendBox = theme_classic() + #Remove gridlines, s
           )
 expNames<- paste0( unique(threshes$exp), collapse="" )
 #############################################Plot mean tf,speed threshes against distractors
-tit<-paste0(expNames,'_MeanAgainstDistractors_',infoMsg,'_threeQuarterThresh') 
+tit<-paste0(expNames,'_MeanAgainstObjects_',infoMsg,'_threeQuarterThresh') 
 quartz(title=tit,width=6,height=6) #create graph of threshes with all iv's
 thr$objects <- as.numeric(thr$numObjects) #Otherwise can't connect with lines
 thr$targets <- as.factor(thr$numTargets) 
 d<-subset(thr,criterionNote=="threeQuarters") # & exp!="HC2013")
 d$iv<-as.factor(d$iv)
 #levels(d$iv) <- c(" ", "  ") #don't show tf, speed facet labels because implied by ylab
+al=1.0 #alpha, if want to emphasize speed points, not t.f. points
 h<-ggplot(data=d, aes(x=objects,y=thresh,color=targets)) 
 h<-h+facet_grid(iv ~ exp, scales="free_y") #"free_y")  
 h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
 h<-h+scale_y_continuous(breaks=seq(0,6)) #No way to set axis labels independently. Could be complicated with a custom axis labeller ?scales::trans_new
 h<-h+scale_x_continuous(breaks=seq(2,12,2))
 h<-h+theme(axis.title.y=element_text(vjust=0.4)) #Move y axis label slightly away from axis
-dodgeWidth<-.25
-h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeWidth))
+dodgeWidth<-0
+h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeWidth), size=3,shape=15)
 h<-h+ stat_summary(fun.y=mean,geom="line",position=position_dodge(width=dodgeWidth))
 h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeWidth)) 
-h<-h+theme(panel.margin=unit(.04, "npc"))
 h<-h+theme(axis.text=element_text(size=8), axis.title=element_text(size=10)) #default text was too big
 h<-h+ggtitle(paste("5,8 difft validates t.f. limit. Speed limits vary widely",lapseMsg))
 #h<-h+coord_cartesian(ylim=c(1.5,2.5)) #have to use coord_cartesian here instead of naked ylim() to don't lose part of threshline
@@ -45,18 +45,35 @@ ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed
 ###Contrast only tf and speed
 #Show the speed domain with a different contrast, or
 #Maybe don't connect the 2,3 data with larger numbers of objects. And use squares instead of circles
-tit<-paste0(expNames,'_MeanAgainstDistractors_',"tf_speed",'_threeQuarterThresh') 
-quartz(title=tit,width=6,height=3.2) #create graph of threshes with all iv's
-#I need a larger vertical spacing between the panels.
+tit<-paste0(expNames,'_highlightSpeedDomain_MeanAgainstObjects_',"tf_speed",'_threeQuarterThresh') 
+quartz(title=tit,width=6,height=5.5) #create graph of threshes with only speed and tf iv's
 thrTfSpd<- subset(thr, iv=="speed" | iv=="tf")
-thrTfSpdMoreThan3<- subset(thrTfSpd, numObjects>3)
+thrTfSpdMoreThan3<- subset(thrTfSpd, objects>3)
 k<-h %+% thrTfSpdMoreThan3
-k<-k+ylab(' Hz                    rps  ')  #ylab('tf (Hz)        speed (rps)')
+k<-k+ylab('Hz                                                                   rps      ')  #ylab('tf (Hz)        speed (rps)')
+k<-k+theme(panel.margin.x=unit(.04, "npc"),panel.margin.y=unit(.12,"npc"))
 #Now add the <=3 objects conditions back in, as squares
-thrTfSpd2and3<- subset(thrTfSpd, numObjects<=3)
-k<-k+stat_summary(data=thrTfSpd2and3, fun.y=mean,geom="point")
+thrTfSpd2and3<- subset(thrTfSpd, objects<=3)
+#k<-k+stat_summary(data=thrTfSpd2and3, fun.y=mean,geom="point",shape=b) # Doesn't work
+#It seems I can't choose shape with stat_summary, so need to calculate mean so can use geom_point
+thrMeans<-dplyr::summarise(group_by(thrTfSpd,objects,targets,exp,iv), thresh =mean(thresh,na.rm=TRUE) )
+#Somewhat limited by speed so draw with squares.
+k<-k+geom_point(data=subset(thrMeans,objects<4), size=3, shape=15)
+k<-k+geom_line(data=subset(thrMeans,objects<4))
+k<-k+stat_summary(data=thrTfSpd2and3,fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95) #error bar has to use non-means
+show(k)
+#Draw rectangles
+speedArea<-data.frame(xmin=-Inf, xmax=3.5, ymin=-Inf, ymax=Inf)
+tfArea<-data.frame(xmin=3.5, xmax=Inf, ymin=-Inf, ymax=Inf)
+#Drawing dashed line connecting to rest of data is more complicated 
+#experiment. Because HC2013 needs to connect to 6 objects
+#HC2013speedLimited<- subset(thrMeans,exp=="HC2013" & objects<
 k<-k+ stat_summary(data=thrTfSpd2and3,fun.y=mean,geom="line")
 k<-k+stat_summary(data=thrTfSpd2and3,fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95) 
+#I need a larger vertical spacing between the panels. How to control vertical indepnedn
+k<-k+theme(panel.margin=unit(.08, "npc"))
+k<-k+geom_rect(data=tfArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
+            color="grey20",linetype="blank",alpha=0.2,inherit.aes=FALSE)
 show(k)
 ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
 
