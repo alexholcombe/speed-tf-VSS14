@@ -34,7 +34,7 @@ h<-h+scale_y_continuous(breaks=seq(0,6)) #No way to set axis labels independentl
 h<-h+scale_x_continuous(breaks=seq(2,12,2))
 h<-h+theme(axis.title.y=element_text(vjust=0.4)) #Move y axis label slightly away from axis
 dodgeWidth<-0
-h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeWidth), size=3,shape=15)
+h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeWidth), size=2,shape=15)
 h<-h+ stat_summary(fun.y=mean,geom="line",position=position_dodge(width=dodgeWidth))
 h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeWidth)) 
 h<-h+theme(axis.text=element_text(size=8), axis.title=element_text(size=10)) #default text was too big
@@ -50,7 +50,7 @@ quartz(title=tit,width=6,height=4.5) #create graph of threshes with only speed a
 thrTfSpd<- subset(thr, iv=="speed" | iv=="tf")
 thrTfSpdMoreThan3<- subset(thrTfSpd, objects>3)
 k<-h %+% thrTfSpdMoreThan3
-k<-k+ylab('Hz                                   rps      ')  #ylab('tf (Hz)        speed (rps)')
+k<-k+ylab('Hz                                       rps  ')  #ylab('tf (Hz)        speed (rps)')
 k<-k+theme(panel.margin.x=unit(.04, "npc"),panel.margin.y=unit(.05,"npc"))
 #Now add the <=3 objects conditions back in, as squares
 thrTfSpd2and3<- subset(thrTfSpd, objects<=3)
@@ -58,7 +58,7 @@ thrTfSpd2and3<- subset(thrTfSpd, objects<=3)
 #It seems I can't choose shape with stat_summary, so need to calculate mean so can use geom_point
 thrMeans<-dplyr::summarise(group_by(thrTfSpd,objects,targets,exp,iv), thresh =mean(thresh,na.rm=TRUE) )
 #Somewhat limited by speed so draw with squares.
-k<-k+geom_point(data=subset(thrMeans,objects<4), size=3, shape=15)
+k<-k+geom_point(data=subset(thrMeans,objects<4), size=2, shape=15)
 k<-k+geom_line(data=subset(thrMeans,objects<4))
 k<-k+stat_summary(data=thrTfSpd2and3,fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95) #error bar has to use non-means
 #Draw rectangles
@@ -73,17 +73,19 @@ k<-k+stat_summary(data=thrTfSpd2and3,fun.data="mean_cl_boot",geom="errorbar",wid
 k<-k+theme(panel.margin=unit(.08, "npc"))
 k<-k+geom_rect(data=tfArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
             color="grey20",linetype="blank",alpha=0.2,inherit.aes=FALSE)
-k<-k+theme(axis.line = element_line(size=.3, color = "grey"), 
+k<-k+theme(axis.line = element_line(size=.3, color = "black"), 
           axis.title.x=element_text(vjust=.10), #Move x axis label slightly away from axis
           legend.key = element_blank(), #don't put boxes around legend bits
-          legend.background= element_rect(fill="transparent",color="grey90"), #put big light grey box around entire legend
+          legend.background= element_rect(fill="transparent",color="grey90"), #put light grey unfilled rect around entire legend
           panel.background = element_rect(fill = "transparent",colour = NA),
-          panel.border=element_rect(colour = "black", fill=NA, size=0.5),
+          panel.border=element_rect(colour = "grey90", fill=NA, size=0.5),
           panel.grid.minor = element_blank(), panel.grid.major=element_blank(),
           plot.background = element_rect(fill = "transparent",colour = NA),
-          strip.background = element_rect(fill = 'transparent',color='white')
+          strip.background = element_rect(fill = 'transparent',color='white'),
           #strip.text.y= element_text(vjust=0, size=14)  #seems to have no effect
+          strip.text.y = element_blank() #Don't need these labels, because units imply them
 )
+k<-k+ guides(colour = guide_legend(title.theme = element_text(size=10, angle = 0))) #make legend title smaller
 show(k)
 ggsave( paste0('figs/',tit,'.png')) # ,bg="transparent" ) #bg option will be passed to png
 
