@@ -63,7 +63,6 @@ k<-k+geom_point(data=subset(thrMeans,objects<4), size=2, shape=15)
 k<-k+geom_line(data=subset(thrMeans,objects<4))
 k<-k+stat_summary(data=thrTfSpd2and3,fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95) #error bar has to use non-means
 #Draw rectangles
-speedArea<-data.frame(xmin=-Inf, xmax=3.5, ymin=-Inf, ymax=Inf)
 tfArea<-data.frame(xmin=3.5, xmax=Inf, ymin=-Inf, ymax=Inf)
 #Drawing dashed line connecting to rest of data is more complicated 
 #experiment. Because HC2013 needs to connect to 6 objects
@@ -73,7 +72,7 @@ k<-k+stat_summary(data=thrTfSpd2and3,fun.data="mean_cl_boot",geom="errorbar",wid
 #I need a larger vertical spacing between the panels. How to control vertical indepnedn
 k<-k+theme(panel.margin=unit(.08, "npc"))
 k<-k+geom_rect(data=tfArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
-            color="grey20",linetype="blank",alpha=0.2,inherit.aes=FALSE)
+               fill="grey10",linetype="blank",alpha=.3,inherit.aes=FALSE)
 k<-k+theme(axis.line = element_line(size=.3, color = "black"), 
           axis.title.x=element_text(vjust=.10), #Move x axis label slightly away from axis
           #legend.key = element_blank(), #don't put boxes around legend bits
@@ -87,8 +86,21 @@ k<-k+theme(axis.line = element_line(size=.3, color = "black"),
           strip.text.y = element_blank() #Don't need these labels, because units imply them
 )
 k+ guides(fill = guide_legend(title = "limitation",
-                              override.aes= list( fill=c("white","grey95"), colour=NA, alpha=1 )))
+                                 override.aes= list( fill=c("white","black"))))
 
+speedArea<-data.frame(xmin=-Inf, xmax=3.5, ymin=-Inf, ymax=Inf)
+k<-k+geom_rect(data=speedArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
+               fill="grey",linetype="blank",alpha=.3,inherit.aes=FALSE)
+k<-k+ guides(fill = guide_legend(title = "limitation",
+                                 override.aes= list( fill=c("white","black"))))
+k
+k<-k+ guides(fill = guide_legend(title = "limitation",
+                              override.aes= list( fill=c("white","black"), colour=NA, alpha=1 )))
+
+k+ guides(colour = guide_legend(override.aes= list( fill="white")))
+
+k+ 
+  
 k <- k + guides(fill = guide_legend(title="limitation",
                         override.aes = list(size = 4, linetype = 1)))
 
