@@ -27,7 +27,8 @@ d<-subset(thr,criterionNote=="threeQuarters") # & exp!="HC2013")
 d$iv<-as.factor(d$iv)
 #levels(d$iv) <- c(" ", "  ") #don't show tf, speed facet labels because implied by ylab
 al=1.0 #alpha, if want to emphasize speed points, not t.f. points
-h<-ggplot(data=d, aes(x=objects,y=thresh,color=targets)) 
+h<-ggplot(data=d, aes(x=objects,y=thresh,color=targets, 
+                      fill=iv)) 
 h<-h+facet_grid(iv ~ exp, scales="free_y") #"free_y")  
 #h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
 h<-h+scale_y_continuous(breaks=seq(0,6)) #No way to set axis labels independently. Could be complicated with a custom axis labeller ?scales::trans_new
@@ -75,7 +76,7 @@ k<-k+geom_rect(data=tfArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
             color="grey20",linetype="blank",alpha=0.2,inherit.aes=FALSE)
 k<-k+theme(axis.line = element_line(size=.3, color = "black"), 
           axis.title.x=element_text(vjust=.10), #Move x axis label slightly away from axis
-          legend.key = element_blank(), #don't put boxes around legend bits
+          #legend.key = element_blank(), #don't put boxes around legend bits
           legend.background= element_rect(fill="transparent",color="grey90"), #put light grey unfilled rect around entire legend
           panel.background = element_rect(fill = "transparent",colour = NA),
           panel.border=element_rect(colour = "grey90", fill=NA, size=0.5),
@@ -85,7 +86,27 @@ k<-k+theme(axis.line = element_line(size=.3, color = "black"),
           #strip.text.y= element_text(vjust=0, size=14)  #seems to have no effect
           strip.text.y = element_blank() #Don't need these labels, because units imply them
 )
-k<-k+ guides(colour = guide_legend(title.theme = element_text(size=10, angle = 0))) #make legend title smaller
+k+ guides(fill = guide_legend(title = "limitation",
+                              override.aes= list( fill=c("white","grey95"), colour=NA, alpha=1 )))
+
+k <- k + guides(fill = guide_legend(title="limitation",
+                        override.aes = list(size = 4, linetype = 1)))
+
+k+ guides(fill = guide_legend(title = "limitation",
+                              override.aes= list( size=4, color="red" )))
+
+          
+k+ guides(fill = guide_legend(title = "limitation",
+                              override.aes= list( fill=c("white","grey") )),
+          fill= guide_legend(override.aes= aes(color=NA)))
+                                
+                                aes(fill=list(c("white","grey")))))
+                                                         ,color=NA))) 
+
+k+ guides(fill = guide_legend(override.aes=aes(fill="grey",color=NA))) 
+k<-k+ guides(fill = guide_legend(title="limitation",
+                                 title.theme = element_text(size=10, angle = 0))) #make legend title smaller
+
 show(k)
 ggsave( paste0('figs/',tit,'.png')) # ,bg="transparent" ) #bg option will be passed to png
 
