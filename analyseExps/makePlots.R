@@ -71,8 +71,8 @@ k<-k+ stat_summary(data=thrTfSpd2and3,fun.y=mean,geom="line")
 k<-k+stat_summary(data=thrTfSpd2and3,fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95) 
 #I need a larger vertical spacing between the panels. How to control vertical indepnedn
 k<-k+theme(panel.margin=unit(.08, "npc"))
-k<-k+geom_rect(data=tfArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
-               fill="grey10",linetype="blank",alpha=.3,inherit.aes=FALSE)
+#k<-k+geom_rect(data=tfArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
+#               fill="grey10",linetype="blank",alpha=.3,inherit.aes=FALSE)
 k<-k+theme(axis.line = element_line(size=.3, color = "black"), 
           axis.title.x=element_text(vjust=.10), #Move x axis label slightly away from axis
           #legend.key = element_blank(), #don't put boxes around legend bits
@@ -85,8 +85,17 @@ k<-k+theme(axis.line = element_line(size=.3, color = "black"),
           #strip.text.y= element_text(vjust=0, size=14)  #seems to have no effect
           strip.text.y = element_blank() #Don't need these labels, because units imply them
 )
+k+ guides(fill = guide_legend(override.aes= list( fill=c("red","red"))))
+
+k+ guides(fill = guide_legend(title="limitation",override.aes=list(fill=c("black","black"),color=NA))) 
+
+k+ guides(fill = guide_legend(title="limitation",override.aes=aes(fill="black",color=NA))) 
+
 k+ guides(fill = guide_legend(title = "limitation",
-                                 override.aes= list( fill=c("white","black"))))
+                              override.aes= list( fill=c("white","grey") )))
+          
+k+ guides(fill = guide_legend(title = "limitation",
+                                 override.aes= fill=c("white","black")))
 
 speedArea<-data.frame(xmin=-Inf, xmax=3.5, ymin=-Inf, ymax=Inf)
 k<-k+geom_rect(data=speedArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
