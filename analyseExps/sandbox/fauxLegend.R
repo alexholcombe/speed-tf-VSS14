@@ -1,28 +1,28 @@
+#############Below one works!
+p <- ggplot(mtcars, aes(wt, mpg, color=factor(gear), size = factor(cyl))) 
+p<-p+ geom_point() +theme_classic()
+rectLims<-data.frame(xmin=5, xmax=Inf, ymin=-Inf, ymax=Inf, 
+                     gear=3,mpg=3,cyl=3,wt=2, limitation="tf")
+whiteRectToBeDroppedButToActivateLegend<- data.frame(xmin=-2,xmax=-1,ymin=1,ymax=2,
+                                                     gear=3,mpg=3,cyl=3,wt=2,limitation="speed")
+rects<-rbind(rectLims,whiteRectToBeDroppedButToActivateLegend)
+p<-p+geom_rect(aes(NULL, NULL, xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax, 
+                   fill = limitation, colour=NA),
+               data = rects)
+xRange<- ggplot_build(p)$panel$ranges[[1]]$x.range
+yRange<- ggplot_build(p)$panel$ranges[[1]]$y.range
+p<-p+ coord_cartesian( xlim=c(0,xRange[2]), ylim=yRange )
+#crop so that doesn't show whiteRect
+p<-p+ scale_fill_manual( values = c("grey50", "white") )
+p<-p+  theme(legend.key = element_rect(color="black")) # put boxes around legend bits
+p
+##############################
 p <- ggplot(mtcars, aes(wt, mpg, color=factor(gear), size = factor(gear), fill=factor(cyl))) 
 p<-p+ geom_point() +theme_classic()
 rectLims<-data.frame(xmin=5, xmax=Inf, ymin=-Inf, ymax=Inf, gear=3,mpg=3,cyl=3,wt=2)
 p<-p+geom_rect(data=rectLims, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
             fill="grey50",alpha=0.5)
 p
-#############This one works!
-p <- ggplot(mtcars, aes(wt, mpg, color=factor(gear), size = factor(cyl))) 
-p<-p+ geom_point() +theme_classic()
-rectLims<-data.frame(xmin=5, xmax=Inf, ymin=-Inf, ymax=Inf, 
-                     gear=3,mpg=3,cyl=3,wt=2, limitation="tf")
-whiteRectToBeDroppedButToActivateLegend<- data.frame(xmin=-2,xmax=-1,ymin=1,ymax=2,
-                gear=3,mpg=3,cyl=3,wt=2,limitation="speed")
-rects<-rbind(rectLims,whiteRectToBeDroppedButToActivateLegend)
-p<-p+geom_rect(aes(NULL, NULL, xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax, 
-                   fill = limitation, colour=NA),
-                 data = rects)
-xRange<- ggplot_build(p)$panel$ranges[[1]]$x.range
-yRange<- ggplot_build(p)$panel$ranges[[1]]$y.range
-p<-p+ coord_cartesian( xlim=c(0,xRange[2]), ylim=yRange )
-#crop so that doesn't show whiteRect
-p<-p+ scale_fill_manual( values = c("grey50", "white") )
-p<-p+  theme(legend.key = element_rect(color="black")) #, #don't put boxes around legend bits
-p
-
 ##########
 #Hack a manual legend for the superposed rectangles highlighting different parts of the graphs
 p
