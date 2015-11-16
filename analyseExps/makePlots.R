@@ -62,8 +62,6 @@ thrMeans<-dplyr::summarise(group_by(thrTfSpd,objects,targets,exp,iv), thresh =me
 k<-k+geom_point(data=subset(thrMeans,objects<4), size=2, shape=15)
 k<-k+geom_line(data=subset(thrMeans,objects<4))
 k<-k+stat_summary(data=thrTfSpd2and3,fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95) #error bar has to use non-means
-#Draw rectangles
-tfArea<-data.frame(xmin=3.5, xmax=Inf, ymin=-Inf, ymax=Inf)
 #Drawing dashed line connecting to rest of data is more complicated 
 #experiment. Because HC2013 needs to connect to 6 objects
 #HC2013speedLimited<- subset(thrMeans,exp=="HC2013" & objects<
@@ -71,8 +69,27 @@ k<-k+ stat_summary(data=thrTfSpd2and3,fun.y=mean,geom="line")
 k<-k+stat_summary(data=thrTfSpd2and3,fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95) 
 #I need a larger vertical spacing between the panels. How to control vertical indepnedn
 k<-k+theme(panel.margin=unit(.08, "npc"))
+#Draw rectangles
+topPanelYrange<-ggplot_build(k)$panel$ranges[[1]]$y.range
+btmPanelYrange<-ggplot_build(k)$panel$ranges[[5]]$y.range
+xRange<- ggplot_build(k)$panel$ranges[[1]]$x.range
+#Create separate rectangles for iv=tf and iv=speed
+tfArea<-data.frame(xmin=3.5, xmax=xRange[2], ymin=yRange[1], ymax=yRange[2], limitation="tf")
+whiteRectToBeDroppedButToActivateLegend<- data.frame(xmin=-2,xmax=-1,ymin=1,ymax=2,
+                                                     limitation="speed")
+rectLims<-rbind(tfArea,whiteRectToBeDroppedButToActivateLegend)
+k<-k+geom_rect(data=rectLims, aes(NULL, NULL, xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax, 
+                   fill = limitation, colour=NA, alpha=0.5))
 #k<-k+geom_rect(data=tfArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
 #               fill="grey10",linetype="blank",alpha=.3,inherit.aes=FALSE)
+k<-k+ scale_fill_manual( values = c("white","grey50") )
+k<-k+  theme(legend.key = element_rect(color="black")) # put boxes around legend bits
+#crop so that doesn't show whiteRect
+k<-k+ coord_cartesian( xlim=c(0,xRange[2]), ylim=yRange )
+k
+
+#k<-k+geom_rect(data=speedArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
+#               fill="grey",linetype="blank",alpha=.3,inherit.aes=FALSE)
 k<-k+theme(axis.line = element_line(size=.3, color = "black"), 
           axis.title.x=element_text(vjust=.10), #Move x axis label slightly away from axis
           #legend.key = element_blank(), #don't put boxes around legend bits
@@ -85,6 +102,11 @@ k<-k+theme(axis.line = element_line(size=.3, color = "black"),
           #strip.text.y= element_text(vjust=0, size=14)  #seems to have no effect
           strip.text.y = element_blank() #Don't need these labels, because units imply them
 )
+k
+
+
+
+
 k+ guides(fill = guide_legend(override.aes= list( fill=c("red","red"))))
 
 k+ guides(fill = guide_legend(title="limitation",override.aes=list(fill=c("black","black"),color=NA))) 
@@ -97,9 +119,7 @@ k+ guides(fill = guide_legend(title = "limitation",
 k+ guides(fill = guide_legend(title = "limitation",
                                  override.aes= fill=c("white","black")))
 
-speedArea<-data.frame(xmin=-Inf, xmax=3.5, ymin=-Inf, ymax=Inf)
-k<-k+geom_rect(data=speedArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
-               fill="grey",linetype="blank",alpha=.3,inherit.aes=FALSE)
+
 k<-k+ guides(fill = guide_legend(title = "limitation",
                                  override.aes= list( fill=c("white","black"))))
 k
