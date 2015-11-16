@@ -52,6 +52,7 @@ thrTfSpd<- subset(thr, iv=="speed" | iv=="tf")
 thrTfSpdMoreThan3<- subset(thrTfSpd, objects>3)
 k<-h %+% thrTfSpdMoreThan3
 k<-k+ylab('Hz                                       rps  ')  #ylab('tf (Hz)        speed (rps)')
+k<-k+theme_classic()
 k<-k+theme(panel.margin.x=unit(.04, "npc"),panel.margin.y=unit(.05,"npc"))
 #Now add the <=3 objects conditions back in, as squares
 thrTfSpd2and3<- subset(thrTfSpd, objects<=3)
@@ -68,26 +69,40 @@ k<-k+stat_summary(data=thrTfSpd2and3,fun.data="mean_cl_boot",geom="errorbar",wid
 k<-k+ stat_summary(data=thrTfSpd2and3,fun.y=mean,geom="line")
 k<-k+stat_summary(data=thrTfSpd2and3,fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95) 
 #I need a larger vertical spacing between the panels. How to control vertical indepnedn
-k<-k+theme(panel.margin=unit(.08, "npc"))
 #Draw rectangles
 topPanelYrange<-ggplot_build(k)$panel$ranges[[1]]$y.range
 btmPanelYrange<-ggplot_build(k)$panel$ranges[[5]]$y.range
 xRange<- ggplot_build(k)$panel$ranges[[1]]$x.range
 #Create separate rectangles for iv=tf and iv=speed
-tfArea<-data.frame(xmin=3.5, xmax=xRange[2], ymin=yRange[1], ymax=yRange[2], limitation="tf")
-whiteRectToBeDroppedButToActivateLegend<- data.frame(xmin=-2,xmax=-1,ymin=1,ymax=2,
-                                                     limitation="speed")
+tfArea<-data.frame(xmin=3.5, xmax=xRange[2], ymin=topPanelYrange[1], ymax=topPanelYrange[2], limitation="tf",iv="speed")
+tfArea<-rbind(tfArea, data.frame(
+  xmin=3.5, xmax=xRange[2], ymin=btmPanelYrange[1], ymax=btmPanelYrange[2], limitation="tf",iv="tf") )
+whiteRectToBeDroppedButToActivateLegend<- data.frame(
+  xmin=2.5,xmax=2.501,ymin=1.2,ymax=1.201,limitation="speed",iv="speed") #,
+#  xmin=-2,xmax=-1,ymin=1,ymax=2,limitation="tf",iv="tf")
+#How am I going to get rid of the whiteRect? Can't, but make it invisible by having background also be white
 rectLims<-rbind(tfArea,whiteRectToBeDroppedButToActivateLegend)
 k<-k+geom_rect(data=rectLims, aes(NULL, NULL, xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax, 
                    fill = limitation, colour=NA, alpha=0.5))
-#k<-k+geom_rect(data=tfArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
-#               fill="grey10",linetype="blank",alpha=.3,inherit.aes=FALSE)
+#Unfortunately, drawing a rectangle always then causes the axis limits to retreat so it doesn't
+#go to the border. Can't crop with coord_cartesian differently in different panels, so
+#No way around that without hacking the graph direcly by modifying its grobs and
+#then rebuilding the plot, which would take a long time to work out. Just be happy with what I got.
 k<-k+ scale_fill_manual( values = c("white","grey50") )
 k<-k+  theme(legend.key = element_rect(color="black")) # put boxes around legend bits
-#crop so that doesn't show whiteRect
-k<-k+ coord_cartesian( xlim=c(0,xRange[2]), ylim=yRange )
+k<-k+theme( panel.background = element_blank(),
+            strip.background = element_blank(),
+            panel.grid.minor = element_blank() )
 k
 
+k<-k+theme( panel.background = element_rect(fill = "transparent",colour = NA),
+            strip.background = element_rect(fill = 'transparent',color=NA))
+k
+
+
+k
+u<-
+  
 #k<-k+geom_rect(data=speedArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
 #               fill="grey",linetype="blank",alpha=.3,inherit.aes=FALSE)
 k<-k+theme(axis.line = element_line(size=.3, color = "black"), 
