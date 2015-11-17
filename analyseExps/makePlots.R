@@ -31,11 +31,12 @@ h<-ggplot(data=d, aes(x=objects,y=thresh,color=targets,
                       fill=iv)) 
 h<-h+facet_grid(iv ~ exp, scales="free_y") #"free_y")  
 #h<-h+themeAxisTitleSpaceNoGridLinesLegendBox
+sz=2.5
 h<-h+scale_y_continuous(breaks=seq(0,6)) #No way to set axis labels independently. Could be complicated with a custom axis labeller ?scales::trans_new
 h<-h+scale_x_continuous(breaks=seq(2,12,2))
 h<-h+theme(axis.title.y=element_text(vjust=0.4)) #Move y axis label slightly away from axis
 dodgeWidth<-0
-h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeWidth), size=2,shape=15)
+h<-h+ stat_summary(fun.y=mean,geom="point",position=position_dodge(width=dodgeWidth), size=2.5,shape=15)
 h<-h+ stat_summary(fun.y=mean,geom="line",position=position_dodge(width=dodgeWidth))
 h<-h+stat_summary(fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95,position=position_dodge(width=dodgeWidth)) 
 h<-h+theme(axis.text=element_text(size=8), axis.title=element_text(size=10)) #default text was too big
@@ -51,16 +52,16 @@ quartz(title=tit,width=6,height=4.5) #create graph of threshes with only speed a
 thrTfSpd<- subset(thr, iv=="speed" | iv=="tf")
 thrTfSpdMoreThan3<- subset(thrTfSpd, objects>3)
 k<-h %+% thrTfSpdMoreThan3
-k<-k+ylab('Hz                                       rps  ')  #ylab('tf (Hz)        speed (rps)')
+k<-k+ylab('Hz                                rps    ')  #ylab('tf (Hz)        speed (rps)')
 k<-k+theme_classic()
-k<-k+theme(panel.margin.x=unit(.04, "npc"),panel.margin.y=unit(.05,"npc"))
+k<-k+theme(panel.margin.x=unit(.04, "npc"),panel.margin.y=unit(.03,"npc"))
 #Now add the <=3 objects conditions back in, as squares
-thrTfSpd2and3<- subset(thrTfSpd, objects<=3)
+thrTfSpd2an3<- subset(thrTfSpd, objects<=3)
 #k<-k+stat_summary(data=thrTfSpd2and3, fun.y=mean,geom="point",shape=b) # Doesn't work
 #It seems I can't choose shape with stat_summary, so need to calculate mean so can use geom_point
 thrMeans<-dplyr::summarise(group_by(thrTfSpd,objects,targets,exp,iv), thresh =mean(thresh,na.rm=TRUE) )
 #Somewhat limited by speed so draw with squares.
-k<-k+geom_point(data=subset(thrMeans,objects<4), size=2, shape=15)
+k<-k+geom_point(data=subset(thrMeans,objects<4), size=sz, shape=15)
 k<-k+geom_line(data=subset(thrMeans,objects<4))
 k<-k+stat_summary(data=thrTfSpd2and3,fun.data="mean_cl_boot",geom="errorbar",width=.25,conf.int=.95) #error bar has to use non-means
 #Drawing dashed line connecting to rest of data is more complicated 
@@ -78,94 +79,30 @@ tfArea<-data.frame(xmin=3.5, xmax=xRange[2], ymin=topPanelYrange[1], ymax=topPan
 tfArea<-rbind(tfArea, data.frame(
   xmin=3.5, xmax=xRange[2], ymin=btmPanelYrange[1], ymax=btmPanelYrange[2], limitation="tf",iv="tf") )
 whiteRectToBeDroppedButToActivateLegend<- data.frame(
-  xmin=2.5,xmax=2.501,ymin=1.2,ymax=1.201,limitation="speed",iv="speed") #,
+  xmin=4.5,xmax=4.501,ymin=1.2,ymax=1.201,limitation="speed",iv="speed") #,
 #  xmin=-2,xmax=-1,ymin=1,ymax=2,limitation="tf",iv="tf")
 #How am I going to get rid of the whiteRect? Can't, but make it invisible by having background also be white
 rectLims<-rbind(tfArea,whiteRectToBeDroppedButToActivateLegend)
 k<-k+geom_rect(data=rectLims, aes(NULL, NULL, xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax, 
-                   fill = limitation, colour=NA, alpha=0.5))
+                   fill = limitation, alpha=0.5),colour=NA)
 #Unfortunately, drawing a rectangle always then causes the axis limits to retreat so it doesn't
 #go to the border. Can't crop with coord_cartesian differently in different panels, so
 #No way around that without hacking the graph direcly by modifying its grobs and
 #then rebuilding the plot, which would take a long time to work out. Just be happy with what I got.
-k<-k+ scale_fill_manual( values = c("white","grey50") )
-k<-k+  theme(legend.key = element_rect(color="black")) # put boxes around legend bits
+k<-k+ scale_fill_manual( values = c("white","grey70") )
+k<-k+  theme(legend.key = element_rect(color="grey80")) # put boxes around legend bits
 k<-k+theme( panel.background = element_blank(),
             strip.background = element_blank(),
-            panel.grid.minor = element_blank() )
+            panel.grid.minor = element_blank(),
+            strip.text.y = element_blank(), #Don't need these labels, because units imply them
+            axis.line = element_line(size=.3, color = "grey40")
+            #axis.text.x = element_text(color="grey30")
+            )
+k<-k+ guides(fill = guide_legend(title = "limited by" ))
+k<-k+ guides(alpha = FALSE ) #Eliminate the alpha legend.
+k<-k+ coord_cartesian(xlim=c(0.9,xRange[2])) #Give a little breathing space on left so points stand out more
 k
-
-k<-k+theme( panel.background = element_rect(fill = "transparent",colour = NA),
-            strip.background = element_rect(fill = 'transparent',color=NA))
-k
-
-
-k
-u<-
-  
-#k<-k+geom_rect(data=speedArea, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),
-#               fill="grey",linetype="blank",alpha=.3,inherit.aes=FALSE)
-k<-k+theme(axis.line = element_line(size=.3, color = "black"), 
-          axis.title.x=element_text(vjust=.10), #Move x axis label slightly away from axis
-          #legend.key = element_blank(), #don't put boxes around legend bits
-          legend.background= element_rect(fill="transparent",color="grey90"), #put light grey unfilled rect around entire legend
-          panel.background = element_rect(fill = "transparent",colour = NA),
-          panel.border=element_rect(colour = "grey90", fill=NA, size=0.5),
-          panel.grid.minor = element_blank(), panel.grid.major=element_blank(),
-          plot.background = element_rect(fill = "transparent",colour = NA),
-          strip.background = element_rect(fill = 'transparent',color='white'),
-          #strip.text.y= element_text(vjust=0, size=14)  #seems to have no effect
-          strip.text.y = element_blank() #Don't need these labels, because units imply them
-)
-k
-
-
-
-
-k+ guides(fill = guide_legend(override.aes= list( fill=c("red","red"))))
-
-k+ guides(fill = guide_legend(title="limitation",override.aes=list(fill=c("black","black"),color=NA))) 
-
-k+ guides(fill = guide_legend(title="limitation",override.aes=aes(fill="black",color=NA))) 
-
-k+ guides(fill = guide_legend(title = "limitation",
-                              override.aes= list( fill=c("white","grey") )))
-          
-k+ guides(fill = guide_legend(title = "limitation",
-                                 override.aes= fill=c("white","black")))
-
-
-k<-k+ guides(fill = guide_legend(title = "limitation",
-                                 override.aes= list( fill=c("white","black"))))
-k
-k<-k+ guides(fill = guide_legend(title = "limitation",
-                              override.aes= list( fill=c("white","black"), colour=NA, alpha=1 )))
-
-k+ guides(colour = guide_legend(override.aes= list( fill="white")))
-
-k+ 
-  
-k <- k + guides(fill = guide_legend(title="limitation",
-                        override.aes = list(size = 4, linetype = 1)))
-
-k+ guides(fill = guide_legend(title = "limitation",
-                              override.aes= list( size=4, color="red" )))
-
-          
-k+ guides(fill = guide_legend(title = "limitation",
-                              override.aes= list( fill=c("white","grey") )),
-          fill= guide_legend(override.aes= aes(color=NA)))
-                                
-                                aes(fill=list(c("white","grey")))))
-                                                         ,color=NA))) 
-
-k+ guides(fill = guide_legend(override.aes=aes(fill="grey",color=NA))) 
-k<-k+ guides(fill = guide_legend(title="limitation",
-                                 title.theme = element_text(size=10, angle = 0))) #make legend title smaller
-
-show(k)
 ggsave( paste0('figs/',tit,'.png')) # ,bg="transparent" ) #bg option will be passed to png
-
 ####vertically arrayed. Won't work because the two columns (rps vs. Hz) need different y-axes
 #which you can't do in ggplot. Anyway, it looks like crap because the rps numbers are so much 
 #lower than the Hz numbers.
