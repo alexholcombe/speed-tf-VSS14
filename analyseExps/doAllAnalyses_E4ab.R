@@ -76,19 +76,22 @@ threeQuarters<- subset(thrAll,criterionNote=="threeQuarters")
 fitFailedThreeQuarters<- subset(threeQuarters,is.na(thresh))
 if (nrow(fitFailedThreeQuarters) >0) {
   cat("Fit failed for threeQuarters in these instances:"); print(fitFailedThreeQuarters)
-}
+} else { cat("Fit succeeded in all cases for threeQuarters") }
+
 threshNegThreeQuarters<- subset(threeQuarters, thresh<=0)
 #Of course log iv's are negative, so don't worry about those
 threshNegThreeQuarters<- subset(threshNegThreeQuarters, iv!="logSpd" & iv!="logTf")
 if ( nrow(threshNegThreeQuarters)>0 ) {
   cat("Threshes came out negative for:")
-  table(threshNegThreeQuarters$iv,threshNegThreeQuarters$exp) #a few speed
+  print( table(threshNegThreeQuarters$iv,threshNegThreeQuarters$exp) ) #a few speed
   # exp numObjects numTargets subject thresh
   #  4b          4          3      CF     NA      
   #HC2013       12          3      PB     NA     
   #HC2013       12          3      SM     NA 
   cat("So will use log iv's")
 }
+source("makeRpsVsHzFigure.R")
+
 source("makePlots.R")
 
 #source analyseSlopes?
