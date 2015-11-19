@@ -14,7 +14,7 @@ if (numExtremeSlopes) {
 #and speed limit for objects=2
 source('helpers/psychometricHelpRobust6.R') #for makeMyPlotCurve4
 numPointsForPsychometricCurve=500
-myPlotCurve <- makeMyPlotCurve4("speed",0.03,4,numPointsForPsychometricCurve)
+myPlotCurve <- makeMyPlotCurve4("speed",0.03,8,numPointsForPsychometricCurve)
 #mean, slope, lapseRate, chanceRate, method, linkFx
 dd<- subset(thrAll,(exp=="4a"|exp=="4b") & iv=="speed" & criterionNote=="threeQuarters")
 dd<-subset(dd,numTargets==1)  
@@ -22,31 +22,42 @@ dd<-subset(dd,numTargets==1)
 modeOfList<- function(l) { names(which.max(table(l)))[1] } #R doesn't have built-in mode function!
 avg<- dplyr::summarise( dplyr::group_by(dd, numObjects),   mean=mean(mean), numTargets=1,
           thresh=mean(thresh),slope=mean(slope),lapseRate=mean(lapseRate),chanceRate=mean(chanceRate),
-          method=modeOfList(method), linkFx=modeOfList(linkFx) )
+          method=modeOfList(method), linkFx=modeOfList(linkFx), iv="speed" )
+tf<-subset(thrAll,(exp=="4a") & iv=="tf" & numTargets==1 & numObjects==9) #Used for VSS2014 poster. Want to compare to updated
+avgTf<- dplyr::summarise( dplyr::group_by(tf, numObjects),   mean=mean(mean), numTargets=1,
+                        thresh=mean(thresh),slope=mean(slope),lapseRate=mean(lapseRate),chanceRate=mean(chanceRate),
+                        method=modeOfList(method), linkFx=modeOfList(linkFx), iv="tf" )
+avg<-rbind(avg,avgTf)
 #Plug in average params to get average psychometric functions
-avgPsycho<-ddply(avg,"numObjects",myPlotCurve)
+avgPsycho<-ddply(avg,.(numObjects,iv),myPlotCurve)
 #Plot speed limits.
 #Create psychometric curve predicted by tf limit for 2-object condition. Take 9-object psychometric function, 
 #speed=tf/numObjects
 #9 object case has speeds tf/9. We want speeds of tf/2. So, multiply speeds by 9/2
-tfLimFor2objs<- subset(avgPsycho,numObjects==9)
+tfLimFor2objs<- subset(avgPsycho,numObjects==9 & iv=="speed")
 tfLimFor2objs$speed<- tfLimFor2objs$speed*9/2
+tfLimFor2objsVSS14poster<- subset(avgPsycho,numObjects==9 & iv=="tf")
+tfLimFor2objsVSS14poster$speed<- tfLimFor2objsVSS14poster$speed/2 #"speed" is actually tf
 #The only problem is that chance will now be 50%. So simply rescale to that?
 #Rescale to 50% to 1. Although need to take into account guess rate.
 l=0.01 #lapse rate
-
-tfLimFor2objs$correct<- (tfLimFor2objs$correct-1/9)/(1-1/9) * 0.5 + 0.5
+tfLimFor2objs$correct<- (tfLimFor2objs$correct-1/9)/(1-l-1/9) * (0.5-l) + 0.5
+tfLimFor2objsVSS14poster$correct<- (tfLimFor2objsVSS14poster$correct-1/9)/(1-l-1/9) * (0.5-l) + 0.5
 tfLimFor2objs$type<-"tf"
+tfLimFor2objsVSS14poster$type<-"tf"
+
 twoObjs<-subset(avgPsycho,numObjects==2)
 twoObjs$type<-"actual"
 twoObjs<-rbind(twoObjs,tfLimFor2objs)
-
-g<-ggplot(avgPsycho,aes(x=speed,y=correct,color=factor(numObjects)))
-g<-ggplot(twoObjs,aes(x=speed,y=correct,color=factor(type)))
+twoObjs<-rbind(twoObjs,tfLimFor2objsVSS14poster)
+#g<-ggplot(avgPsycho,aes(x=speed,y=correct,color=factor(numObjects)))
+g<-ggplot(twoObjs,aes(x=speed,y=correct,color=factor(type),shape=factor(iv)))
 g<-g+geom_point()
 g<-g+coord_cartesian(xlim=c(0,4))
 g<-g+geom_hline(yintercept=0.88)
-g
+g #look nearly identical, the e4a tf fit function and that of the e4a,e4b average speed fit
+#Now I see why poster threshold difference was 0.8 rps, whereas I've got 0.5 rps-
+#It's because the 75% threshold difference is indeed 0.8 rps different.
 ##########################################tf mean slope against targets
 tit=paste0(expNames,"_tfSpeedSlopeMeanAgainstDistractors_",infoMsg,"_threeQuarterThresh")
 quartz(title=tit,width=6,height=3)
