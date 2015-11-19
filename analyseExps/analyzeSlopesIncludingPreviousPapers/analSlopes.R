@@ -14,7 +14,7 @@ if (numExtremeSlopes) {
 #and speed limit for objects=2
 source('helpers/psychometricHelpRobust6.R') #for makeMyPlotCurve4
 numPointsForPsychometricCurve=500
-myPlotCurve <- makeMyPlotCurve4("speed",0.03,2.5,numPointsForPsychometricCurve)
+myPlotCurve <- makeMyPlotCurve4("speed",0.03,4,numPointsForPsychometricCurve)
 #mean, slope, lapseRate, chanceRate, method, linkFx
 dd<- subset(thrAll,(exp=="4a"|exp=="4b") & iv=="speed" & criterionNote=="threeQuarters")
 dd<-subset(dd,numTargets==1)  
@@ -29,17 +29,24 @@ avgPsycho<-ddply(avg,"numObjects",myPlotCurve)
 #Create psychometric curve predicted by tf limit for 2-object condition. Take 9-object psychometric function, 
 #speed=tf/numObjects
 #9 object case has speeds tf/9. We want speeds of tf/2. So, multiply speeds by 9/2
-#The only problem is that chance will now be 50%. So simply rescale to that?
 tfLimFor2objs<- subset(avgPsycho,numObjects==9)
 tfLimFor2objs$speed<- tfLimFor2objs$speed*9/2
+#The only problem is that chance will now be 50%. So simply rescale to that?
+#Rescale to 50% to 1. Although need to take into account guess rate.
+l=0.01 #lapse rate
+
+tfLimFor2objs$correct<- (tfLimFor2objs$correct-1/9)/(1-1/9) * 0.5 + 0.5
 tfLimFor2objs$type<-"tf"
 twoObjs<-subset(avgPsycho,numObjects==2)
 twoObjs$type<-"actual"
 twoObjs<-rbind(twoObjs,tfLimFor2objs)
 
+g<-ggplot(avgPsycho,aes(x=speed,y=correct,color=factor(numObjects)))
 g<-ggplot(twoObjs,aes(x=speed,y=correct,color=factor(type)))
 g<-g+geom_point()
-g  
+g<-g+coord_cartesian(xlim=c(0,4))
+g<-g+geom_hline(yintercept=0.88)
+g
 ##########################################tf mean slope against targets
 tit=paste0(expNames,"_tfSpeedSlopeMeanAgainstDistractors_",infoMsg,"_threeQuarterThresh")
 quartz(title=tit,width=6,height=3)
