@@ -49,15 +49,90 @@ tfLimFor2objsVSS14poster$type<-"tf"
 twoObjs<-subset(avgPsycho,numObjects==2)
 twoObjs$type<-"actual"
 twoObjs<-rbind(twoObjs,tfLimFor2objs)
-twoObjs<-rbind(twoObjs,tfLimFor2objsVSS14poster)
+twoObjsWithVSS14<-rbind(twoObjs,tfLimFor2objsVSS14poster)
 #g<-ggplot(avgPsycho,aes(x=speed,y=correct,color=factor(numObjects)))
-g<-ggplot(twoObjs,aes(x=speed,y=correct,color=factor(type),shape=factor(iv)))
+g<-ggplot(twoObjsWithVSS14,aes(x=speed,y=correct,color=factor(type),shape=factor(iv)))
 g<-g+geom_point()
 g<-g+coord_cartesian(xlim=c(0,4))
 g<-g+geom_hline(yintercept=0.88)
 g #look nearly identical, the e4a tf fit function and that of the e4a,e4b average speed fit
 #Now I see why poster threshold difference was 0.8 rps, whereas I've got 0.5 rps-
 #It's because the 75% threshold difference is indeed 0.8 rps different.
+#Now, recreate the rest of the VSS poster graphs.
+tit<-'Example_actual_and_Hz_limit'
+quartz(tit,width=4,height=4)
+g<-ggplot(twoObjs,aes(x=speed,y=correct,color=factor(type)))
+g<-g+geom_line()
+g<-g+coord_cartesian(xlim=c(0,4))
+g<-g+geom_hline(yintercept=0.88,linetype=2)
+g
+ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
+##########################################
+#Show tf limit predicted for each number of objects
+tfLim<- subset(avgPsycho,numObjects==9 & iv=="speed")
+#replicate it for each numObjects condition that want to simulate
+objConds<- unique(avgPsycho$numObjects)
+numObjConds<- length( objConds )
+tfLimPredictd<- tfLim[ rep(seq(nrow(tfLim)),numObjConds) , ]
+#Create the numObjects to go with it
+times<- (nrow(tfLimPredictd)) / numObjConds
+numObj<- rep(objConds, each=times)
+tfLimPredictd$numObjects<-numObj
+tfLimPredictd$speed<- tfLimPredictd$speed*9/tfLimPredictd$numObjects
+#NEED TO RESCALE TO CHANCE
+tfLimPredictd$chance<- 1/tfLimPredictd$numObjects
+tfLimPredictd$correct<- (tfLimPredictd$correct-1/9)/(1-l-1/9) *
+                         (1-l-tfLimPredictd$chance) + tfLimPredictd$chance
+
+tfLimPredictd$type="tf"
+observd<-avgPsycho
+observd$chance<- 1/observd$numObjects
+observd$type<- "observed"
+both<- rbind(tfLimPredictd,observd)
+both<- subset(both, numObjects!=9) #because prediction and observed identical there.
+both$objects<- paste0(both$numObjects," objects") #text for different plot panels
+tit<-'Rps_and_Hz_limits_each_numObjs'
+quartz(tit,width=4,height=7)
+g<-ggplot(both,aes(x=speed,y=correct,color=type))
+g<-g+facet_grid(objects~.)
+g<-g+geom_line()
+g<-g+xlab("speed (rps")
+criteria<- 1/unique(both$numObjects) + 0.75*(1-1/unique(both$numObjects))
+g<-g+geom_hline(data.frame(criterion=criteria), 
+                yintercept=criterion,linetype=2, color="grey")
+g<-g+theme_bw()+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+g<-g+theme(         strip.background = element_rect(fill = 'transparent',color='white') )
+g<-g+scale_color_manual(values=c("black","red","blue"))
+#use point by point search to find the threshold. 
+#Set threshold criterion depending on numObjects
+both$criterion<- 1/both$numObjects + 0.75*(1-1/both$numObjects)
+both$criterion<- round(both$criterion,3)
+threeQuarterThreshExtract<- function(psychometric) {
+  numObjectsThis<- psychometric$numObjects[1]
+  #calculate three-quarters thresh
+  myThreshGetNumeric<- makeMyThreshGetNumerically("speed",psychometric$criterion[1])
+  threshesThisNumeric<- myThreshGetNumeric(psychometric)
+  threshesThisNumeric$criterion<- psychometric$criterion[1]
+  return (threshesThisNumeric)
+}
+threshesThisNumeric = ddply(both,.(numObjects,type),threeQuarterThreshExtract)
+#Create threshold line
+threshLine <- function(df) {   
+  #assumes that df has column "thresh", the threshold value, also must have "criterion"
+  threshes = df$thresh
+  speeds=c(threshes[1],threshes[1])
+  yMin=0
+  corrects=c(df$criterion,yMin-.2) #draw down to horizontal axis. The -.2 makes sure it extends into margin
+  grid<-data.frame(speed=speeds,correct=corrects)
+  return (grid) 
+}
+threshLines <- ddply(threshesThisNumeric,.(numObjects,type),threshLine)
+threshLines$objects<- paste0(threshLines$numObjects," objects") #text for different plot panels
+g<-g+ geom_line(data=threshLines,lty=2)  #,color="black") #emphasize lines so can see what's going on
+g<-g+coord_cartesian(xlim=c(0.3,3.5),ylim=c(0.1,1))
+g
+ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
+
 ##########################################tf mean slope against targets
 tit=paste0(expNames,"_tfSpeedSlopeMeanAgainstDistractors_",infoMsg,"_threeQuarterThresh")
 quartz(title=tit,width=6,height=3)
