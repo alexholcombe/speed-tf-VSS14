@@ -23,14 +23,15 @@ modeOfList<- function(l) { names(which.max(table(l)))[1] } #R doesn't have built
 avg<- dplyr::summarise( dplyr::group_by(dd, numObjects),   mean=mean(mean), numTargets=1,
           thresh=mean(thresh),slope=mean(slope),lapseRate=mean(lapseRate),chanceRate=mean(chanceRate),
           method=modeOfList(method), linkFx=modeOfList(linkFx), iv="speed" )
-#tf<-subset(thrAll,(exp=="4a") & iv=="tf" & numTargets==1 & numObjects==9) #Used for VSS2014 poster. Want to compare to updated
+tf<-subset(thrAll,(exp=="4a") & iv=="tf" & numTargets==1 & numObjects==9) #Used purely for comparing to VSS2014 poster. Want to compare to updated
 avgTf<- dplyr::summarise( dplyr::group_by(tf, numObjects),   mean=mean(mean), numTargets=1,
                         thresh=mean(thresh),slope=mean(slope),lapseRate=mean(lapseRate),chanceRate=mean(chanceRate),
                         method=modeOfList(method), linkFx=modeOfList(linkFx), iv="tf" )
 avg<-rbind(avg,avgTf)
 #Plug in average params to get average psychometric functions
 avgPsycho<-ddply(avg,.(numObjects,iv),myPlotCurve)
-#Plot speed limits. Compre to old VSS2014 poster
+###################################################
+#Plot speed limits, for Comparing to old VSS2014 poster
 #Create psychometric curve predicted by tf limit for 2-object condition. Take 9-object psychometric function, 
 #speed=tf/numObjects
 #9 object case has speeds tf/9. We want speeds of tf/2. So, multiply speeds by 9/2
@@ -45,7 +46,6 @@ tfLimFor2objs$correct<- (tfLimFor2objs$correct-1/9)/(1-l-1/9) * (0.5-l) + 0.5
 tfLimFor2objsVSS14poster$correct<- (tfLimFor2objsVSS14poster$correct-1/9)/(1-l-1/9) * (0.5-l) + 0.5
 tfLimFor2objs$type<-"tf"
 tfLimFor2objsVSS14poster$type<-"tf"
-
 twoObjs<-subset(avgPsycho,numObjects==2)
 twoObjs$type<-"actual"
 twoObjs<-rbind(twoObjs,tfLimFor2objs)
@@ -67,8 +67,8 @@ g<-g+coord_cartesian(xlim=c(0,4))
 g<-g+geom_hline(yintercept=0.88,linetype=2)
 g
 ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
-##########################################
-#Show tf limit predicted for each number of objects
+################################################
+#Show tf limit predicted for each number of objects against observed data
 tfLim<- subset(avgPsycho,numObjects==9 & iv=="speed")
 #replicate it for each numObjects condition that want to simulate
 objConds<- unique(avgPsycho$numObjects)
@@ -132,6 +132,14 @@ g<-g+ geom_line(data=threshLines,lty=2)  #,color="black") #emphasize lines so ca
 g<-g+coord_cartesian(xlim=c(0.3,3.5),ylim=c(0.1,1))
 g
 ggsave( paste0('figs/',tit,'.png') ,bg="transparent" ) #bg option will be passed to png
+##Tf limit actually predicts worse threshold than actual!
+#Hm, look subject-by-subject.
+ee<- subset(thrAll,(exp=="4a"|exp=="4b") & iv=="speed" & criterionNote=="threeQuarters")
+#For each participant, get their tf limit and plot against observed
+#tf limit is numObjects==9. Add prediction for 2,3,4,6 objects to dataframe
+#How to make dataframe combine nicely, is it enough to return longer dataframe than was sent from ddply?
+#In modelLimitsIndividSs.R, looks like I used expand.grid, so maybe it doesn't work
+
 
 ##########################################tf mean slope against targets
 tit=paste0(expNames,"_tfSpeedSlopeMeanAgainstDistractors_",infoMsg,"_threeQuarterThresh")
