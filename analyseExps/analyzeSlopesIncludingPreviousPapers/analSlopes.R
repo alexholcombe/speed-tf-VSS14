@@ -23,14 +23,14 @@ modeOfList<- function(l) { names(which.max(table(l)))[1] } #R doesn't have built
 avg<- dplyr::summarise( dplyr::group_by(dd, numObjects),   mean=mean(mean), numTargets=1,
           thresh=mean(thresh),slope=mean(slope),lapseRate=mean(lapseRate),chanceRate=mean(chanceRate),
           method=modeOfList(method), linkFx=modeOfList(linkFx), iv="speed" )
-tf<-subset(thrAll,(exp=="4a") & iv=="tf" & numTargets==1 & numObjects==9) #Used for VSS2014 poster. Want to compare to updated
+#tf<-subset(thrAll,(exp=="4a") & iv=="tf" & numTargets==1 & numObjects==9) #Used for VSS2014 poster. Want to compare to updated
 avgTf<- dplyr::summarise( dplyr::group_by(tf, numObjects),   mean=mean(mean), numTargets=1,
                         thresh=mean(thresh),slope=mean(slope),lapseRate=mean(lapseRate),chanceRate=mean(chanceRate),
                         method=modeOfList(method), linkFx=modeOfList(linkFx), iv="tf" )
 avg<-rbind(avg,avgTf)
 #Plug in average params to get average psychometric functions
 avgPsycho<-ddply(avg,.(numObjects,iv),myPlotCurve)
-#Plot speed limits.
+#Plot speed limits. Compre to old VSS2014 poster
 #Create psychometric curve predicted by tf limit for 2-object condition. Take 9-object psychometric function, 
 #speed=tf/numObjects
 #9 object case has speeds tf/9. We want speeds of tf/2. So, multiply speeds by 9/2
@@ -79,7 +79,6 @@ times<- (nrow(tfLimPredictd)) / numObjConds
 numObj<- rep(objConds, each=times)
 tfLimPredictd$numObjects<-numObj
 tfLimPredictd$speed<- tfLimPredictd$speed*9/tfLimPredictd$numObjects
-#NEED TO RESCALE TO CHANCE
 tfLimPredictd$chance<- 1/tfLimPredictd$numObjects
 tfLimPredictd$correct<- (tfLimPredictd$correct-1/9)/(1-l-1/9) *
                          (1-l-tfLimPredictd$chance) + tfLimPredictd$chance
@@ -91,22 +90,23 @@ observd$type<- "observed"
 both<- rbind(tfLimPredictd,observd)
 both<- subset(both, numObjects!=9) #because prediction and observed identical there.
 both$objects<- paste0(both$numObjects," objects") #text for different plot panels
+#Set threshold criterion depending on numObjects
+both$criterion<- 1/both$numObjects + 0.75*(1-1/both$numObjects)
+both$criterion<- round(both$criterion,3)
+both$chance<- 1/both$numObjects
 tit<-'Rps_and_Hz_limits_each_numObjs'
 quartz(tit,width=4,height=7)
 g<-ggplot(both,aes(x=speed,y=correct,color=type))
 g<-g+facet_grid(objects~.)
 g<-g+geom_line()
 g<-g+xlab("speed (rps")
+
 criteria<- 1/unique(both$numObjects) + 0.75*(1-1/unique(both$numObjects))
-g<-g+geom_hline(data.frame(criterion=criteria), 
-                yintercept=criterion,linetype=2, color="grey")
+g<-g+geom_hline(aes(yintercept=chance),linetype=2, color="grey")
 g<-g+theme_bw()+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 g<-g+theme(         strip.background = element_rect(fill = 'transparent',color='white') )
 g<-g+scale_color_manual(values=c("black","red","blue"))
 #use point by point search to find the threshold. 
-#Set threshold criterion depending on numObjects
-both$criterion<- 1/both$numObjects + 0.75*(1-1/both$numObjects)
-both$criterion<- round(both$criterion,3)
 threeQuarterThreshExtract<- function(psychometric) {
   numObjectsThis<- psychometric$numObjects[1]
   #calculate three-quarters thresh
